@@ -57,11 +57,11 @@ Os controles abaixo protegem **três perfis de usuário** com necessidades disti
 │  │        │       │       │           │                            │
 │  ▼        ▼       ▼       ▼           ▼                            │
 │ Auth    Alertas  ML    Ingestão    SOA (Java)                     │
-│ (C#)   (C#)   (Python) (Python)  (Spring Boot)                   │
+│ (C#)   (C#)   (Python) (C#)     (Spring Boot)                   │
 │                   │                                                │
 │  ┌────────────────▼────────────────────────┐                      │
 │  │   PostgreSQL + PostGIS                  │                      │
-│  │   AES-256 em repouso (TDE)             │                      │
+│  │   AES-256 em repouso (pgcrypto + LUKS)  │                      │
 │  │   Backups criptografados                │                      │
 │  └─────────────────────────────────────────┘                      │
 │                                                                    │
@@ -246,7 +246,7 @@ builder.Services.AddHsts(options =>
 
 | Dado | Mecanismo | Detalhe |
 |---|---|---|
-| **Banco PostgreSQL** | TDE (Transparent Data Encryption) via `pgcrypto` + criptografia a nível de disco (LUKS) | Dados em disco ilegíveis sem a chave mestra; chave mestra armazenada no Vault |
+| **Banco PostgreSQL** | Criptografia de coluna via `pgcrypto` (campos sensíveis) + criptografia full-disk (LUKS/dm-crypt) | Dados em disco ilegíveis sem a chave mestra; chave mestra armazenada no Vault |
 | **Backups** | AES-256-GCM antes do upload para S3 | `pg_dump` → criptografia com chave rotacionada mensalmente → upload; chave no Vault |
 | **Modelos ML (.pkl)** | AES-256 no armazenamento (S3 server-side encryption) | Protege propriedade intelectual do modelo treinado contra exfiltração |
 | **Logs arquivados** | AES-256 em repouso no bucket de long-term storage | Compliance — logs de auditoria intactos por 12 meses |
@@ -260,7 +260,7 @@ Senhas nunca são armazenadas em texto plano ou com hashing fraco. O 2F-AGRO uti
 
 | Parâmetro | Valor | Justificativa |
 |---|---|---|
-| **Algoritmo** | bcrypt | Resistente a ataques de GPU/ASIC por design (memory-hard); amplamente auditado |
+| **Algoritmo** | bcrypt | Resistente a ataques de GPU/ASIC por design (CPU-intensivo e resistente a paralelismo em GPU); amplamente auditado |
 | **Work factor (custo)** | 12 (4.096 iterações) | Equilíbrio entre segurança e tempo de resposta aceitável (~250ms no servidor) |
 | **Salt** | 128 bits, gerado automaticamente pelo bcrypt | Impede ataques de rainbow table |
 | **Migração futura** | Argon2id preparado como fallback | ASP.NET Identity suporta troca transparente de hasher; migração sob demanda no próximo login |
@@ -541,7 +541,7 @@ O app mobile implementa **certificate pinning** para impedir ataques Man-in-the-
 |---|---|
 | **O que é fixado** | Hash SHA-256 do **Subject Public Key Info (SPKI)** do certificado do servidor (pin-sha256) |
 | **Backup pin** | Hash de um certificado de contingência (rotação sem deploy emergencial) |
-| **Implementação** | Configuração nativa via `expo-network` + interceptor Axios customizado |
+| **Implementação** | Configuração via `react-native-ssl-pinning` (Config Plugin Expo) + interceptor Axios customizado |
 | **Fallback** | Se o pin falhar, request é **recusado** (fail-closed) — app exibe mensagem de erro de conectividade |
 
 **Configuração no app React Native (Expo):**

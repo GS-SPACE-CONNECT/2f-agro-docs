@@ -20,7 +20,7 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 
 | # | Ativo | Descrição | Classificação | Justificativa |
 |---|---|---|---|---|
-| A1 | **Geolocalização das propriedades** | Coordenadas GPS (lat/long) de cada propriedade cadastrada | **Dado pessoal sensível (LGPD art. 5º, II)** | Revela localização exata do agricultor e da safra; exposição gera risco de roubo de safra, invasão de terra e violência física |
+| A1 | **Geolocalização das propriedades** | Coordenadas GPS (lat/long) de cada propriedade cadastrada | **Dado pessoal (LGPD art. 5º, I) com proteção reforçada pelo risco contextual (perfilamento + risco à integridade física do titular — art. 12, §2º c/c art. 11)** | Revela localização exata do agricultor e da safra; exposição gera risco de roubo de safra, invasão de terra e violência física |
 | A2 | **Dados financeiros do produtor** | Renda estimada, área cultivada, volume de produção, linhas de crédito (Pronaf) | **Confidencial** | Dados econômicos que, cruzados com localização, permitem perfilamento para fraude financeira ou extorsão |
 | A3 | **Modelo ML treinado** | Modelos scikit-learn (Regressão Linear, Logística, Árvore, K-Means) serializados em produção | **Propriedade intelectual + integridade operacional** | Modelo comprometido gera previsões erradas → agricultor toma decisão equivocada → perda de safra (impacto direto na subsistência) |
 | A4 | **Banco de alertas** | Registros de alertas agroclimáticos (seca, praga, geada, enchente, erosão) no PostgreSQL | **Integridade crítica** | Alertas adulterados podem suprimir avisos de seca iminente ou gerar falsos alarmes, ambos com impacto econômico real |
@@ -38,12 +38,12 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
      │                      │                      │
      ▼                      ▼                      ▼
 ┌─────────┐          ┌────────────┐          ┌──────────┐
-│ 📱 App  │          │ 🌐 Web     │          │ 📡 APIs  │
-│ Mobile  │          │ Dashboard  │          │ Externas │
-│ (Expo)  │          │ (React)    │          │ NASA/    │
-│         │          │            │          │ CPTEC    │
+│ 📱 App  │          │ ☕ SOA     │          │ 📡 APIs  │
+│ Mobile  │          │ Java/      │          │ Externas │
+│ (Expo)  │          │ Spring     │          │ NASA/    │
+│         │          │ Boot       │          │ CPTEC    │
 └────┬────┘          └─────┬──────┘          └────┬─────┘
-     │ HTTPS/TLS           │ HTTPS/TLS            │ HTTPS
+     │ HTTPS/TLS           │ HTTPS/REST+SOAP      │ HTTPS
      │                     │                      │
 ═════╪═════════════════════╪══════════════════════╪══════════
      ▼                     ▼                      ▼
@@ -105,7 +105,7 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 
 | # | Controle | Camada |
 |---|---|---|
-| M1.1 | **Criptografia fim a fim (E2E):** além do AES-128 nativo do LoRaWAN, implementar camada adicional de criptografia aplicacional (AES-256-GCM) com chave pré-compartilhada por estação, para que mesmo o operador do gateway não leia os dados em texto claro | Dados em trânsito |
+| M1.1 | **Criptografia fim a fim (E2E):** além do AES-128 nativo do LoRaWAN, implementar camada adicional de criptografia aplicacional (AES-256-GCM) com chave pré-compartilhada por estação, para que, mesmo em caso de comprometimento do Network Server ou vazamento da AppSKey, os dados de telemetria permaneçam protegidos por uma camada independente | Dados em trânsito |
 | M1.2 | **Anonimização de coordenadas em trânsito:** truncar coordenadas a 2 casas decimais (~1,1 km de imprecisão) nos pacotes de telemetria; coordenadas precisas ficam apenas no cadastro autenticado da API | Dados em trânsito |
 | M1.3 | **mTLS no fallback 4G:** certificado de cliente instalado na estação + certificate pinning, impedindo MITM mesmo que o atacante controle um roteador intermediário | Autenticação |
 | M1.4 | **Detecção de anomalia de rede:** se uma estação que transmite a cada 60s ficar silenciosa por >5 min ou apresentar jitter anormal, gerar alerta no SIEM (Grafana + Loki) | Monitoramento |
@@ -132,7 +132,7 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 | # | Controle | Camada |
 |---|---|---|
 | M2.1 | **Validação estatística de ingestão:** cada leitura é comparada contra a faixa esperada para a região/época (ex: temperatura no semiárido em dezembro: 28-42°C; se chegar 10°C, rejeitar e alertar). Regra de sanidade com janela deslizante de 24h | Aplicação |
-| M2.2 | **Assinatura digital dos dados na estação:** cada pacote de telemetria é assinado com chave ECDSA armazenada em TPM/hardware seguro do Raspberry Pi; o serviço de ingestão rejeita pacotes com assinatura inválida | Integridade |
+| M2.2 | **Assinatura digital dos dados na estação:** cada pacote de telemetria é assinado com chave ECDSA armazenada em TPM externo (ex: Infineon SLB9670 via SPI) ou módulo de elemento seguro (Zymbit) acoplado ao Raspberry Pi; o serviço de ingestão rejeita pacotes com assinatura inválida | Integridade |
 | M2.3 | **Quarentena de dados anômalos:** leituras fora de padrão não entram diretamente no pipeline de treinamento; ficam em tabela separada para revisão humana (agrônomo da cooperativa) | Processo |
 | M2.4 | **Versionamento e rollback do modelo:** cada re-treino gera artefato versionado (MLflow ou similar) com hash SHA-256; se a acurácia do modelo degradar >5% em validação cruzada, rollback automático para versão anterior | ML Ops |
 | M2.5 | **Correlação cruzada entre estações:** dados de uma estação são comparados com estações vizinhas (< 20 km); divergência >30% dispara alerta de possível adulteração | Detecção |
@@ -179,12 +179,12 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 **Escala de risco:**
 
 ```
-              │ Baixo    │ Médio    │ Alto       │ Crítico
-──────────────┼──────────┼──────────┼────────────┼───────────
- Alta         │ Médio    │ Alto     │ Crítico    │ Crítico
- Média        │ Baixo    │ Médio    │ Alto       │ Crítico ←VET-02
- Baixa        │ Baixo    │ Baixo    │ Médio      │ Alto
-──────────────┴──────────┴──────────┴────────────┴───────────
+              │ Baixo    │ Médio    │ Alto         │ Crítico
+──────────────┼──────────┼──────────┼──────────────┼──────────────
+ Alta         │ Médio    │ Alto     │ Crítico      │ Crítico ←VET-03
+ Média        │ Baixo    │ Médio    │ Alto ←VET-01 │ Crítico ←VET-02
+ Baixa        │ Baixo    │ Baixo    │ Médio        │ Alto
+──────────────┴──────────┴──────────┴──────────────┴──────────────
  Probabilidade      Impacto →
 ```
 

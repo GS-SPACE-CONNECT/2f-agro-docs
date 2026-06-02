@@ -72,7 +72,7 @@ A 2F-AGRO compromete-se a proteger a **confidencialidade**, **integridade** e **
 | **Público** | Informação de acesso livre | Dados climáticos agregados por região, alertas públicos, documentação da API pública | Sem restrição de acesso |
 | **Interno** | Uso restrito à equipe e parceiros | Código-fonte, documentação técnica, logs de sistema, métricas de uso | Autenticação obrigatória; repositórios privados |
 | **Confidencial** | Acesso restrito por função | Dados pessoais (nome, CPF, e-mail), dados produtivos individuais, credenciais de serviço | Criptografia em repouso (AES-256) e em trânsito (TLS 1.3); RBAC; log de acesso |
-| **Sensível** | Dado pessoal sensível (LGPD art. 5º, II) | Geolocalização precisa das propriedades, dados financeiros (renda, crédito Pronaf) | Tudo de "Confidencial" + consentimento explícito; acesso auditado; anonimização em logs |
+| **Proteção reforçada** | Dado pessoal (LGPD art. 5º, I) com proteção reforçada pelo risco contextual (perfilamento + risco à integridade física — art. 12, §2º c/c art. 11) | Geolocalização precisa das propriedades, dados financeiros (renda, crédito Pronaf) | Tudo de "Confidencial" + consentimento qualificado; acesso auditado; anonimização em logs |
 
 ### 2.5 Política de controle de acesso
 
@@ -85,7 +85,7 @@ A 2F-AGRO compromete-se a proteger a **confidencialidade**, **integridade** e **
 | **Gestão de credenciais** | Secrets armazenados em Vault (HashiCorp); rotação trimestral; credenciais padrão proibidas; push protection ativo no GitHub |
 | **Política de senhas** | Mínimo 12 caracteres, com letras maiúsculas, minúsculas, números e caracteres especiais; bloqueio após 5 tentativas (lockout 15 min); sem reutilização das últimas 5 senhas |
 
-### 2.6 Controles técnicos de segurança (Anexo A — ISO 27001)
+### 2.6 Controles técnicos de segurança (Anexo A — ISO/IEC 27001:2013)
 
 | Domínio ISO 27001 | Controle | Status |
 |---|---|---|
@@ -94,7 +94,7 @@ A 2F-AGRO compromete-se a proteger a **confidencialidade**, **integridade** e **
 | A.7 — Segurança em RH | Termos de confidencialidade para membros da equipe | Planejado |
 | A.8 — Gestão de ativos | Inventário de 6 ativos críticos (ver Threat Model); classificação de dados (§ 2.4) | Implementado |
 | A.9 — Controle de acesso | RBAC + JWT + MFA + owner check (§ 2.5) | Implementado |
-| A.10 — Criptografia | AES-256 em repouso (PostgreSQL TDE); TLS 1.3 em trânsito; bcrypt para senhas; AES-256-GCM para telemetria edge | Implementado |
+| A.10 — Criptografia | AES-256 em repouso (pgcrypto em colunas sensíveis + LUKS full-disk); TLS 1.3 em trânsito; bcrypt para senhas; AES-256-GCM para telemetria edge | Implementado |
 | A.12 — Segurança operacional | Logging centralizado (Grafana + Loki); monitoramento 24/7; backups diários criptografados | Implementado |
 | A.13 — Segurança de comunicações | TLS 1.3 em todas as comunicações; mTLS no fallback 4G das estações; certificate pinning no app mobile | Implementado |
 | A.14 — Aquisição e desenvolvimento | Code review obrigatório (PR + 1 reviewer); SAST no CI; testes de autorização automatizados | Implementado |
@@ -251,7 +251,7 @@ Verificar a eficácia dos controles de segurança, a conformidade com a ISO 2700
 | Dado pessoal | Base legal (LGPD art. 7º) | Justificativa |
 |---|---|---|
 | Nome completo, CPF, e-mail, telefone | **Consentimento (art. 7º, I)** | Cadastro voluntário no app; consentimento granular coletado na tela de primeiro acesso |
-| Geolocalização precisa da propriedade | **Consentimento explícito (art. 11, I)** | Dado pessoal sensível; consentimento destacado e específico com explicação clara da finalidade |
+| Geolocalização precisa da propriedade | **Consentimento qualificado (art. 7º, I)** | Dado pessoal com proteção reforçada pelo risco contextual; consentimento destacado e específico com explicação clara da finalidade |
 | Dados produtivos (safra, área cultivada) | **Execução de contrato (art. 7º, V)** | Necessário para prestação do serviço de alertas agroclimáticos |
 | Dados financeiros (renda, crédito Pronaf) | **Consentimento (art. 7º, I)** | Dado opcional; coletado apenas se o agricultor optar por funcionalidades financeiras |
 | Telemetria IoT (temperatura, umidade, vento) | **Legítimo interesse (art. 7º, IX)** | Dados técnicos sem identificação direta; necessários para funcionamento do sistema; teste de proporcionalidade documentado no RIPD |
@@ -271,8 +271,8 @@ O 2F-AGRO implementa consentimento conforme arts. 7º, 8º e 11 da LGPD:
 │                                                    │
 │  ☑ Nome e CPF (obrigatório para cadastro)          │
 │  ☑ Localização da propriedade (obrigatório para    │
-│    alertas — dado sensível, protegido por           │
-│    criptografia)                                   │
+│    alertas — dado protegido por criptografia        │
+│    e anonimização em logs)                         │
 │  ☐ Dados financeiros (opcional — usado para        │
 │    sugestões de crédito Pronaf)                    │
 │                                                    │
@@ -373,7 +373,7 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 
 | Funcionalidade | Dados coletados | Dados **não** coletados (minimização) |
 |---|---|---|
-| Cadastro básico | Nome, e-mail, telefone, senha (hash) | Endereço residencial, RG, data de nascimento, foto |
+| Cadastro básico | Nome, CPF, e-mail, telefone, senha (hash) | Endereço residencial, RG, data de nascimento, foto |
 | Alertas agroclimáticos | Coordenadas da propriedade, cultura plantada | Área total da fazenda (usa apenas raio de alerta) |
 | Detecção de pragas | Foto da folha (processada e descartada) | Metadados EXIF da foto (removidos antes do envio) |
 | Dashboard financeiro (opcional) | Renda estimada, área cultivada | Dados bancários, número de conta, extrato |
@@ -461,7 +461,7 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 
 ## 7. Referências
 
-- **ISO/IEC 27001:2022** — Sistemas de gestão de segurança da informação — Requisitos
+- **ISO/IEC 27001:2013** — Sistemas de gestão de segurança da informação — Requisitos (Anexo A com 14 domínios de controle)
 - **ISO/IEC 27005:2022** — Gestão de riscos de segurança da informação
 - **LGPD — Lei nº 13.709/2018** (arts. 5º, 6º, 7º, 8º, 11, 16, 18, 37, 38, 41, 42, 46)
 - **ANPD** — Guia Orientativo para Definições dos Agentes de Tratamento e do Encarregado (2021)
