@@ -723,6 +723,18 @@ Para cada vetor de ataque do Threat Model, existe um playbook específico que de
 | **Recuperação** | Verificar extensão do vazamento (quais dados, quantos titulares); DPO notifica ANPD em até 72h; notificar titulares afetados (push notification + cooperativa); recomendar troca de senha; se CPF vazou: orientar agricultores sobre monitoramento de fraude | roji + jota |
 | **Pós-incidente** | Implementar SAST obrigatório no CI para detectar endpoints sem `[Authorize]`; adicionar rate limiting mais restritivo em endpoints de listagem; atualizar threat model e RIPD | jota |
 
+### 8.4 Playbook VET-04 — DDoS contra a API Gateway em período de safra
+
+**Cenário:** ataque volumétrico (L3/L4) ou de aplicação (L7 — HTTP flood, slowloris) derruba a API Gateway durante período crítico de safra, impedindo que agricultores recebam alertas agroclimáticos.
+
+| Fase | Ação | Responsável |
+|---|---|---|
+| **Detecção** | SIEM detecta latência p99 > 2 s ou erros 5xx > 5% por 2 min; WAF (Cloudflare) reporta pico anormal de tráfego; agricultores reportam app "fora do ar" | SIEM + WAF automático |
+| **Contenção** | Ativar modo "Under Attack" no Cloudflare (challenge em todo tráfego L7); ativar modo degradado read-only na API (alertas e dados cacheados permanecem acessíveis); escalar pods via HPA se carga for absorvível; bloquear faixas de IP de origem predominante no WAF | brunão + ruan |
+| **Erradicação** | Analisar padrão do ataque (volumétrico vs. aplicação) nos logs do WAF; identificar e bloquear IPs/ASNs de origem da botnet; ajustar regras WAF (rate limiting mais agressivo, validação de headers, JS challenge); confirmar que tráfego legítimo está fluindo normalmente | brunão + ruan + jota |
+| **Recuperação** | Desativar modo "Under Attack" gradualmente (manter rate limiting reforçado por 24 h); desativar modo degradado; verificar que o pipeline de alertas (ingestão IoT + consulta NASA POWER/CPTEC) está operacional; enviar push notification aos agricultores: "O 2F-AGRO está de volta. Confira seus alertas atualizados." | brunão + ruan + roji |
+| **Pós-incidente** | Avaliar se o plano de capacidade é adequado (dimensionamento dos pods, tier do Cloudflare); considerar redundância geográfica (multi-region); documentar padrão do ataque para enriquecer regras do WAF; atualizar threat model | jota |
+
 ---
 
 ## 9. Comunicação e escalação

@@ -26,6 +26,7 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 | A4 | **Banco de alertas** | Registros de alertas agroclimáticos (seca, praga, geada, enchente, erosão) no PostgreSQL | **Integridade crítica** | Alertas adulterados podem suprimir avisos de seca iminente ou gerar falsos alarmes, ambos com impacto econômico real |
 | A5 | **Estação edge IoT** | Raspberry Pi 4 com sensores (DHT22, BME280, anemômetro, pluviômetro) em fazenda remota do semiárido | **Infraestrutura crítica de campo** | Acesso físico em área rural sem vigilância; ponto de entrada na rede; alimenta o pipeline de dados inteiro |
 | A6 | **API Gateway** | Ponto de entrada único (C# .NET 8) que roteia para todos os microsserviços internos | **Disponibilidade crítica** | Indisponibilidade em época de safra impede que agricultores recebam alertas; superfície exposta à internet |
+| A7 | **Links de dados espaciais** | Integração HTTP/REST com APIs da NASA POWER (radiação solar, precipitação, evapotranspiração) e CPTEC-INPE (previsão meteorológica, alertas climáticos), consumidas pelo serviço SOA (Java/Spring Boot) | **Disponibilidade + Integridade** | Fonte primária de dados agroclimáticos que alimentam os alertas do 2F-AGRO; indisponibilidade impede emissão de alertas; adulteração gera previsões erradas → agricultor toma decisão equivocada |
 
 ---
 
@@ -82,6 +83,7 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 | **TB2** | Estação IoT → Serviço de Ingestão | LoRaWAN (AES-128) / 4G + mTLS |
 | **TB3** | API Gateway → Microsserviços internos | gRPC/HTTP interno (rede privada) |
 | **TB4** | Serviço ML → Modelo serializado | Filesystem local + hash SHA-256 |
+| **TB5** | Serviço SOA → APIs espaciais (NASA POWER / CPTEC) | HTTPS/TLS 1.2+ (dependente do servidor externo) |
 
 ---
 
@@ -168,6 +170,32 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 
 ---
 
+### Vetor 4 — DDoS contra a API Gateway em período crítico de safra
+
+| Aspecto | Detalhe |
+|---|---|
+| **ID** | VET-04 |
+| **Ativo alvo** | A6 (API Gateway), A7 (Links de dados espaciais) |
+| **Categoria STRIDE** | Denial of Service |
+| **Descrição do ataque** | Atacante executa ataque volumétrico (DDoS) ou de aplicação (HTTP flood, slowloris) contra a API Gateway do 2F-AGRO durante o período crítico de safra (plantio ou colheita), impedindo que agricultores acessem alertas agroclimáticos. A indisponibilidade da API também interrompe a ingestão de telemetria das estações IoT e a consulta às APIs espaciais (NASA POWER / CPTEC-INPE), paralisando o pipeline inteiro de alertas. |
+| **Pré-condição** | Endpoint público exposto na internet (necessário para o app mobile funcionar); botnets de aluguel acessíveis na dark web (~US$ 50–200 para ataque de algumas horas) |
+| **Cenário narrativo** | Durante a temporada de plantio no semiárido de Pernambuco (fevereiro–março), um concorrente ou agente mal-intencionado contrata um serviço de DDoS e lança 50 Gbps de tráfego contra api.2f-agro.com.br usando uma botnet de ~10.000 nós. A API Gateway fica indisponível por 6 horas. Nesse intervalo, o CPTEC emite um alerta de seca iminente para a região de Petrolina-PE, mas Seu João e outros 2.000 agricultores cadastrados não recebem a notificação. Sem o aviso, 40% dos agricultores não irrigam preventivamente e perdem parte significativa da safra de milho — prejuízo de R$ 500–5.000 por família. |
+| **Impacto** | **Alto** — perda econômica coletiva para agricultores; interrupção do serviço em momento crítico da safra; agricultores sem alternativa digital de consulta; possível perda de confiança na plataforma |
+| **Probabilidade** | **Média** — DDoS-as-a-Service é acessível e barato; API pública é alvo trivial; porém plataformas com CDN/WAF (Cloudflare) reduzem significativamente a eficácia do ataque |
+| **Risco** | **Alto** (impacto alto × probabilidade média) |
+
+**Mitigações propostas:**
+
+| # | Controle | Camada |
+|---|---|---|
+| M4.1 | **CDN + WAF com mitigação DDoS integrada:** Cloudflare absorve tráfego volumétrico (L3/L4) e HTTP flood (L7) antes de chegar à origem; geo-blocking restringe tráfego ao Brasil; challenge automático (Turnstile) em endpoints públicos | Rede |
+| M4.2 | **Auto-scaling horizontal:** Horizontal Pod Autoscaler (HPA) no Kubernetes escala os pods da API Gateway de 3 para até 10 conforme carga de CPU/memória, absorvendo picos legítimos que passem pela CDN | Infraestrutura |
+| M4.3 | **Modo degradado read-only automático:** se a carga ultrapassa o limiar definido (CPU > 90% ou latência p99 > 2 s por 2 min), o sistema bloqueia automaticamente escritas e mantém apenas leituras — alertas existentes e dados cacheados continuam acessíveis ao agricultor | Aplicação |
+| M4.4 | **Cache local no app mobile (offline-first):** o app armazena os últimos alertas e dados da propriedade em AsyncStorage; mesmo com a API indisponível, o agricultor consulta alertas recentes e histórico localmente | Mobile |
+| M4.5 | **Alertas de disponibilidade no SIEM:** Grafana monitora latência p99 e taxa de erros 5xx; se latência > 2 s ou erros > 5% por 2 min, aciona alerta de possível DDoS e notifica o Coordenador de SI | Monitoramento |
+
+---
+
 ## 5. Matriz de risco consolidada
 
 | Vetor | Ativo(s) | STRIDE | Probabilidade | Impacto | Risco | Prioridade |
@@ -175,16 +203,17 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 | VET-01 — MITM Telemetria | A5, A1 | I, S | Média | Alto | **Alto** | 2 |
 | VET-02 — Envenenamento ML | A3, A4, A5 | T, E | Média | Crítico | **Crítico** | 1 |
 | VET-03 — Vazamento PII | A1, A2, A6 | I, E | Alta | Crítico | **Crítico** | 1 |
+| VET-04 — DDoS em período de safra | A6, A7 | D | Média | Alto | **Alto** | 2 |
 
 **Escala de risco:**
 
 ```
-              │ Baixo    │ Médio    │ Alto         │ Crítico
-──────────────┼──────────┼──────────┼──────────────┼──────────────
- Alta         │ Médio    │ Alto     │ Crítico      │ Crítico ←VET-03
- Média        │ Baixo    │ Médio    │ Alto ←VET-01 │ Crítico ←VET-02
- Baixa        │ Baixo    │ Baixo    │ Médio        │ Alto
-──────────────┴──────────┴──────────┴──────────────┴──────────────
+              │ Baixo    │ Médio    │ Alto             │ Crítico
+──────────────┼──────────┼──────────┼──────────────────┼──────────────
+ Alta         │ Médio    │ Alto     │ Crítico          │ Crítico ←VET-03
+ Média        │ Baixo    │ Médio    │ Alto ←VET-01,04  │ Crítico ←VET-02
+ Baixa        │ Baixo    │ Baixo    │ Médio            │ Alto
+──────────────┴──────────┴──────────┴──────────────────┴──────────────
  Probabilidade      Impacto →
 ```
 
