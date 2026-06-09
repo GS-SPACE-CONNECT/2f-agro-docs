@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archimate:model xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:archimate="http://www.archimatetool.com/archimate" name="2F-AGRO — Plataforma Agronômica com Tecnologia Espacial" id="mdl-2fagro-2026" version="5.0.0">
+  <folder name="Motivation" id="fld-motivation" type="motivation">
+    <element xsi:type="archimate:Stakeholder" name="Agricultor Familiar" id="sh-agricultor" documentation="Pequeno produtor rural, público-alvo principal. Usa o app para receber alertas e recomendações agronômicas."/>
+    <element xsi:type="archimate:Stakeholder" name="Cooperativa / Assentamento" id="sh-cooperativa" documentation="Agrupa agricultores familiares. Usa o dashboard web para visão regional e coordenação coletiva."/>
+    <element xsi:type="archimate:Stakeholder" name="EMATER / MAPA" id="sh-emater" documentation="Órgão extensionista. Recebe relatórios de risco via webhook para planejar visitas técnicas."/>
+    <element xsi:type="archimate:Stakeholder" name="Banco / Pronaf" id="sh-banco" documentation="Financiador de crédito rural. Beneficia-se da redução de risco de safra."/>
+    <element xsi:type="archimate:Stakeholder" name="ONG (CONTAG / MST)" id="sh-ong" documentation="Parceiro de inclusão tecnológica. Recebe relatórios de impacto social mensais."/>
+    <element xsi:type="archimate:Driver" name="Deserto tecnológico na agricultura familiar" id="dr-deserto" documentation="77% dos estabelecimentos rurais BR são pequenos, mas toda tecnologia agrícola foca o grande agro."/>
+    <element xsi:type="archimate:Driver" name="Mudanças climáticas e risco crescente de safra" id="dr-clima" documentation="Eventos extremos (geada, seca, excesso chuva) sem aviso prévio causam prejuízo de R$10-50k por família."/>
+    <element xsi:type="archimate:Driver" name="Acesso limitado a crédito rural (Pronaf)" id="dr-credito" documentation="Bancos restringem Pronaf por risco não mensurado. Dados de risco reduzem inadimplência."/>
+    <element xsi:type="archimate:Goal" name="Reduzir perda de safra em 30%" id="goal-safra"/>
+    <element xsi:type="archimate:Goal" name="Democratizar tecnologia espacial para pequenos produtores" id="goal-democratizar"/>
+    <element xsi:type="archimate:Goal" name="Aumentar resiliência climática regional" id="goal-resiliencia"/>
+    <element xsi:type="archimate:Goal" name="Escalar apoio extensionista da EMATER" id="goal-emater"/>
+    <element xsi:type="archimate:Requirement" name="Funcionar offline (menos de 5MB por mês)" id="req-offline"/>
+    <element xsi:type="archimate:Requirement" name="Interface acessível: áudio TTS, ícones grandes, fonte 18sp" id="req-acessivel"/>
+    <element xsi:type="archimate:Requirement" name="Compatível com Android 7 e celular básico" id="req-android"/>
+    <element xsi:type="archimate:Requirement" name="Conformidade LGPD: consentimento, auditoria, direito ao esquecimento" id="req-lgpd"/>
+    <element xsi:type="archimate:Requirement" name="Latência de inferência ML menor que 500ms" id="req-latencia"/>
+    <element xsi:type="archimate:Constraint" name="Dataset simulado FIAP (CSV)" id="con-dataset"/>
+    <element xsi:type="archimate:Constraint" name="Prazo de entrega: 09/06/2026" id="con-prazo"/>
+    <element xsi:type="archimate:Constraint" name="Equipe de 5 pessoas" id="con-equipe"/>
+    <element xsi:type="archimate:Principle" name="Acessibilidade radical: o agricultor não precisa entender tecnologia" id="pr-acessibilidade"/>
+    <element xsi:type="archimate:Principle" name="IA invisível: mostra resultado, não fórmula" id="pr-ia"/>
+    <element xsi:type="archimate:Principle" name="Dados coletivos só com consentimento explícito (LGPD)" id="pr-lgpd"/>
+  </folder>
+  <folder name="Business" id="fld-business" type="business">
+    <element xsi:type="archimate:BusinessActor" name="Agricultor Familiar" id="ba-agricultor"/>
+    <element xsi:type="archimate:BusinessActor" name="Gestor de Cooperativa" id="ba-gestor"/>
+    <element xsi:type="archimate:BusinessActor" name="Extensionista EMATER" id="ba-extensionista"/>
+    <element xsi:type="archimate:BusinessActor" name="Administrador 2F-AGRO" id="ba-admin"/>
+    <element xsi:type="archimate:BusinessRole" name="Produtor Rural" id="br-produtor"/>
+    <element xsi:type="archimate:BusinessRole" name="Gestor Regional" id="br-gestor"/>
+    <element xsi:type="archimate:BusinessRole" name="Agrônomo" id="br-agronomo"/>
+    <element xsi:type="archimate:BusinessRole" name="Administrador de Sistema" id="br-admin"/>
+    <element xsi:type="archimate:BusinessProcess" name="Monitorar Propriedade Rural" id="bp-monitorar" documentation="Agricultor abre o app e visualiza o status atual da lavoura com cor semafórica."/>
+    <element xsi:type="archimate:BusinessProcess" name="Detectar Risco Agronômico" id="bp-detectar" documentation="Sistema processa dados de satélite + sensores e executa modelo ML para gerar índice de risco."/>
+    <element xsi:type="archimate:BusinessProcess" name="Identificar Praga por Fotografia" id="bp-praga" documentation="Agricultor fotografa folha suspeita; sistema identifica praga/doença via visão computacional."/>
+    <element xsi:type="archimate:BusinessProcess" name="Recomendar Ação Agronômica" id="bp-recomendar" documentation="Sistema gera recomendação direta baseada no risco detectado e na cultura plantada."/>
+    <element xsi:type="archimate:BusinessProcess" name="Coordenar Ação Coletiva da Cooperativa" id="bp-coordenar" documentation="Gestor usa dashboard para disparar alertas para toda a cooperativa quando risco regional é alto."/>
+    <element xsi:type="archimate:BusinessProcess" name="Acompanhar Resultado da Safra" id="bp-acompanhar" documentation="Agricultor registra ações tomadas e acompanha histórico de risco nos últimos 30 dias."/>
+    <element xsi:type="archimate:BusinessProcess" name="Reportar a EMATER" id="bp-reportar" documentation="Sistema envia automaticamente relatório de risco regional para extensionistas via webhook."/>
+    <element xsi:type="archimate:BusinessService" name="Diagnóstico Agronômico" id="bs-diagnostico"/>
+    <element xsi:type="archimate:BusinessService" name="Alerta Preventivo de Risco" id="bs-alerta"/>
+    <element xsi:type="archimate:BusinessService" name="Recomendação Inteligente de Ação" id="bs-recomendacao"/>
+    <element xsi:type="archimate:BusinessService" name="Identificação de Pragas e Doenças" id="bs-praga"/>
+    <element xsi:type="archimate:BusinessService" name="Visão Coletiva Regional" id="bs-visao"/>
+    <element xsi:type="archimate:BusinessObject" name="Propriedade Rural" id="bo-propriedade"/>
+    <element xsi:type="archimate:BusinessObject" name="Alerta de Risco de Safra" id="bo-alerta"/>
+    <element xsi:type="archimate:BusinessObject" name="Recomendação Agronômica" id="bo-recomendacao"/>
+    <element xsi:type="archimate:BusinessObject" name="Diagnóstico de Praga" id="bo-diagnostico"/>
+    <element xsi:type="archimate:BusinessObject" name="Relatório de Safra Regional" id="bo-relatorio"/>
+  </folder>
+  <folder name="Application" id="fld-application" type="application">
+    <element xsi:type="archimate:ApplicationComponent" name="App Mobile 2F-AGRO" id="ac-mobile" documentation="React Native + Expo. Offline-first, Android 7+. Interface acessível com áudio TTS, ícones grandes."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Web Dashboard (Cooperativa)" id="ac-dashboard" documentation="React + Leaflet. Mapa interativo de risco regional, exportação CSV/PDF, webhooks EMATER."/>
+    <element xsi:type="archimate:ApplicationComponent" name="API Gateway" id="ac-gateway" documentation="C# .NET 8 Web API. Roteamento, rate limiting, autenticação OAuth2/JWT para todos os microsserviços."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Serviço ML Agro" id="ac-ml" documentation="Python FastAPI + scikit-learn. Regressão Logística + Árvore de Decisão + K-Means para perfil agronômico."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Serviço Visão de Pragas" id="ac-visao" documentation="Python + YOLOv8 + OpenCV. Detecta pragas e doenças em folhas via câmera do celular em menos de 3s."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Serviço de Alertas Agro" id="ac-alertas" documentation="C# .NET 8 + EF Core. Regras agronômicas, persistência de alertas e recomendações por cultura."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Serviço de Notificação" id="ac-notif" documentation="C# .NET + RabbitMQ. Envia push via Expo/FCM em até 5 min após detecção de risco ALTO."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Serviço Auth e Auditoria LGPD" id="ac-auth" documentation="C# Identity + JWT. OAuth2, hash bcrypt, blacklist de tokens, log imutável de acesso para LGPD."/>
+    <element xsi:type="archimate:ApplicationComponent" name="Serviço de Ingestão" id="ac-ingestao" documentation="Python + pandas. Processa CSV de satélite (6h) e recebe dados MQTT da estação edge (15 min)."/>
+    <element xsi:type="archimate:ApplicationService" name="REST API Propriedades" id="as-rest" documentation="GET/POST /api/propriedades — CRUD de propriedades rurais com geolocalização."/>
+    <element xsi:type="archimate:ApplicationService" name="Inferência de Risco ML" id="as-ml" documentation="POST /api/ml/inferir — Retorna {risco, probabilidade, motivo} em menos de 500ms."/>
+    <element xsi:type="archimate:ApplicationService" name="Detecção de Pragas por CV" id="as-cv" documentation="POST /api/visao/praga — Classifica praga em imagem de folha com YOLOv8."/>
+    <element xsi:type="archimate:ApplicationService" name="Push Notifications" id="as-push" documentation="Expo Push API — Alerta no celular do agricultor sobre risco ALTO."/>
+    <element xsi:type="archimate:ApplicationService" name="Autenticação OAuth2 e JWT" id="as-auth" documentation="POST /api/auth/token — Login com CPF+senha, JWT 8h, refresh 30 dias."/>
+    <element xsi:type="archimate:ApplicationService" name="Webhook EMATER" id="as-webhook" documentation="POST {url_emater} — Relatório diário às 7h com dados de risco regional anonimizados."/>
+    <element xsi:type="archimate:DataObject" name="Dados NDVI de Satélite" id="do-ndvi" documentation="NDVI, umidade solo, cobertura nuvens, chuva prevista, temperatura — CSV simulado FIAP."/>
+    <element xsi:type="archimate:DataObject" name="Dados de Sensores Edge" id="do-sensor" documentation="Temperatura, umidade relativa, pluviometria, velocidade do vento — Raspberry Pi na fazenda."/>
+    <element xsi:type="archimate:DataObject" name="Imagem de Folha" id="do-imagem" documentation="Foto tirada pelo agricultor via câmera do celular para diagnóstico de praga."/>
+    <element xsi:type="archimate:DataObject" name="Perfil Agronômico (Cluster)" id="do-perfil" documentation="Segmentação K-Means (k=4): Zona Seca, Área Chuvosa, Encosta Vulnerável, Propriedade Estável."/>
+    <element xsi:type="archimate:DataObject" name="Histórico de Alertas" id="do-historico" documentation="Série temporal de alertas, probabilidades e ações tomadas — últimos 30 dias por propriedade."/>
+    <element xsi:type="archimate:DataObject" name="Log de Auditoria LGPD" id="do-auditoria" documentation="Registro imutável append-only: user_id, propriedade_id, timestamp, IP — retenção 5 anos."/>
+  </folder>
+  <folder name="Technology &amp; Physical" id="fld-technology" type="technology">
+    <element xsi:type="archimate:Node" name="Cloud Azure ou AWS" id="tn-cloud" documentation="Hospeda todos os microsserviços containerizados e o banco de dados PostgreSQL."/>
+    <element xsi:type="archimate:Node" name="Estação Edge na Fazenda (Raspberry Pi)" id="tn-edge" documentation="Raspberry Pi Zero 2W com painel solar 5W. Instalada na propriedade rural sem energia elétrica."/>
+    <element xsi:type="archimate:Node" name="Celular do Agricultor (Android 7+)" id="tn-mobile" documentation="Celular Android básico. Roda o app React Native com modelo YOLO lite para diagnóstico offline."/>
+    <element xsi:type="archimate:Node" name="Satélite Simulado (CSV FIAP)" id="tn-satelite" documentation="Fonte de dados orbitais simulada pelo dataset oficial da FIAP. 320 registros de propriedades rurais."/>
+    <element xsi:type="archimate:Device" name="Raspberry Pi Zero 2W" id="dev-raspi" documentation="Hardware da estação edge. Consome menos de 2W. Alimentado por painel solar de 5W."/>
+    <element xsi:type="archimate:Device" name="Sensores DHT22 e Pluviômetro" id="dev-sensores" documentation="DHT22: temperatura + umidade. Pluviômetro: precipitação. Anemômetro: velocidade do vento."/>
+    <element xsi:type="archimate:SystemSoftware" name="Raspbian Custom OS" id="ss-raspbian" documentation="Sistema operacional customizado para a estação edge. Baseado em Debian 12, otimizado para baixo consumo."/>
+    <element xsi:type="archimate:SystemSoftware" name="Docker e Kubernetes" id="ss-docker" documentation="Orquestração de containers na nuvem. Deploy de todos os microsserviços 2F-AGRO."/>
+    <element xsi:type="archimate:SystemSoftware" name="Android 7 (Nougat) ou superior" id="ss-android" documentation="Sistema operacional do celular do agricultor. Requerimento mínimo do app React Native."/>
+    <element xsi:type="archimate:TechnologyService" name="PostgreSQL 15 com PostGIS" id="ts-postgres" documentation="Banco relacional com extensão geoespacial. Armazena propriedades, alertas, séries temporais e audit log."/>
+    <element xsi:type="archimate:TechnologyService" name="RabbitMQ 3.12" id="ts-rabbitmq" documentation="Fila de mensagens para desacoplar detecção de risco do envio de notificações push."/>
+    <element xsi:type="archimate:TechnologyService" name="S3 ou Azure Blob Storage" id="ts-s3" documentation="Armazena imagens de folhas, modelos ML (.pkl) e pesos YOLO (.pt)."/>
+    <element xsi:type="archimate:TechnologyService" name="HTTPS com TLS 1.3" id="ts-tls" documentation="Toda comunicação entre app, dashboard e API Gateway é criptografada."/>
+    <element xsi:type="archimate:TechnologyService" name="MQTT Broker" id="ts-mqtt" documentation="Protocolo IoT leve para comunicação entre estação edge e serviço de ingestão na nuvem."/>
+    <element xsi:type="archimate:TechnologyService" name="SQLite Local" id="ts-sqlite" documentation="Banco local no celular do agricultor para modo offline. Sincroniza com PostgreSQL quando online."/>
+    <element xsi:type="archimate:CommunicationNetwork" name="Internet 4G ou 5G ou WiFi" id="cn-internet" documentation="Conexão entre celular do agricultor e API Gateway na nuvem."/>
+    <element xsi:type="archimate:CommunicationNetwork" name="LoRa ou WiFi Local (Edge)" id="cn-lora" documentation="Comunicação entre estação edge na fazenda e roteador ou gateway de internet."/>
+    <element xsi:type="archimate:Artifact" name="Modelo ML scikit-learn (.pkl)" id="ar-modelo" documentation="Modelos treinados: Regressão Logística + Árvore de Decisão + K-Means. Armazenados em S3."/>
+    <element xsi:type="archimate:Artifact" name="Dataset CSV FIAP" id="ar-dataset" documentation="dataset_space_risk_global_solution.csv — 320 propriedades, 14 colunas, dados simulados."/>
+    <element xsi:type="archimate:Artifact" name="Pesos YOLO v8 (.pt)" id="ar-yolo" documentation="Pesos do modelo fine-tuned em PlantVillage para detecção de 5 pragas/doenças em folhas."/>
+  </folder>
+  <folder name="Relations" id="fld-relations" type="relations">
+    <!-- Motivation: Stakeholders → Drivers / Goals -->
+    <element xsi:type="archimate:AssociationRelationship" id="r001" source="sh-agricultor" target="dr-deserto"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r002" source="sh-agricultor" target="goal-safra"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r003" source="sh-cooperativa" target="goal-democratizar"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r004" source="sh-emater" target="goal-emater"/>
+    <element xsi:type="archimate:InfluenceRelationship" id="r005" source="dr-deserto" target="goal-democratizar"/>
+    <element xsi:type="archimate:InfluenceRelationship" id="r006" source="dr-clima" target="goal-safra"/>
+    <element xsi:type="archimate:InfluenceRelationship" id="r007" source="dr-clima" target="goal-resiliencia"/>
+    <element xsi:type="archimate:InfluenceRelationship" id="r008" source="dr-credito" target="goal-safra"/>
+    <!-- Goals → Requirements -->
+    <element xsi:type="archimate:RealizationRelationship" id="r009" source="goal-safra" target="req-latencia"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r010" source="goal-democratizar" target="req-acessivel"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r011" source="goal-democratizar" target="req-offline"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r012" source="goal-democratizar" target="req-android"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r013" source="goal-resiliencia" target="req-lgpd"/>
+    <!-- Principles → Requirements -->
+    <element xsi:type="archimate:InfluenceRelationship" id="r014" source="pr-acessibilidade" target="req-acessivel"/>
+    <element xsi:type="archimate:InfluenceRelationship" id="r015" source="pr-lgpd" target="req-lgpd"/>
+    <!-- Business: Actors → Roles -->
+    <element xsi:type="archimate:AssignmentRelationship" id="r020" source="ba-agricultor" target="br-produtor"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r021" source="ba-gestor" target="br-gestor"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r022" source="ba-extensionista" target="br-agronomo"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r023" source="ba-admin" target="br-admin"/>
+    <!-- Business: Roles → Processes -->
+    <element xsi:type="archimate:AssignmentRelationship" id="r024" source="br-produtor" target="bp-monitorar"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r025" source="br-produtor" target="bp-praga"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r026" source="br-gestor" target="bp-coordenar"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r027" source="br-agronomo" target="bp-reportar"/>
+    <!-- Business: Process flow (triggering) -->
+    <element xsi:type="archimate:TriggeringRelationship" id="r030" source="bp-monitorar" target="bp-detectar"/>
+    <element xsi:type="archimate:TriggeringRelationship" id="r031" source="bp-detectar" target="bp-recomendar"/>
+    <element xsi:type="archimate:TriggeringRelationship" id="r032" source="bp-praga" target="bp-recomendar"/>
+    <element xsi:type="archimate:TriggeringRelationship" id="r033" source="bp-recomendar" target="bp-acompanhar"/>
+    <element xsi:type="archimate:TriggeringRelationship" id="r034" source="bp-detectar" target="bp-coordenar"/>
+    <!-- Business: Processes → Services (realization) -->
+    <element xsi:type="archimate:RealizationRelationship" id="r040" source="bp-monitorar" target="bs-diagnostico"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r041" source="bp-detectar" target="bs-alerta"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r042" source="bp-recomendar" target="bs-recomendacao"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r043" source="bp-praga" target="bs-praga"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r044" source="bp-coordenar" target="bs-visao"/>
+    <!-- Business: Services → Actors (serving) -->
+    <element xsi:type="archimate:ServingRelationship" id="r050" source="bs-diagnostico" target="ba-agricultor"/>
+    <element xsi:type="archimate:ServingRelationship" id="r051" source="bs-alerta" target="ba-agricultor"/>
+    <element xsi:type="archimate:ServingRelationship" id="r052" source="bs-recomendacao" target="ba-agricultor"/>
+    <element xsi:type="archimate:ServingRelationship" id="r053" source="bs-visao" target="ba-gestor"/>
+    <element xsi:type="archimate:ServingRelationship" id="r054" source="bs-diagnostico" target="ba-extensionista"/>
+    <!-- Application: Gateway composes services -->
+    <element xsi:type="archimate:CompositionRelationship" id="r060" source="ac-gateway" target="ac-ml"/>
+    <element xsi:type="archimate:CompositionRelationship" id="r061" source="ac-gateway" target="ac-visao"/>
+    <element xsi:type="archimate:CompositionRelationship" id="r062" source="ac-gateway" target="ac-alertas"/>
+    <element xsi:type="archimate:CompositionRelationship" id="r063" source="ac-gateway" target="ac-auth"/>
+    <element xsi:type="archimate:CompositionRelationship" id="r064" source="ac-gateway" target="ac-notif"/>
+    <element xsi:type="archimate:CompositionRelationship" id="r065" source="ac-gateway" target="ac-ingestao"/>
+    <!-- Application: Components → Services (realization) -->
+    <element xsi:type="archimate:RealizationRelationship" id="r070" source="ac-ml" target="as-ml"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r071" source="ac-visao" target="as-cv"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r072" source="ac-notif" target="as-push"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r073" source="ac-auth" target="as-auth"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r074" source="ac-alertas" target="as-rest"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r075" source="ac-dashboard" target="as-webhook"/>
+    <!-- Application: Services serve business processes -->
+    <element xsi:type="archimate:ServingRelationship" id="r080" source="ac-mobile" target="bp-monitorar"/>
+    <element xsi:type="archimate:ServingRelationship" id="r081" source="ac-mobile" target="bp-praga"/>
+    <element xsi:type="archimate:ServingRelationship" id="r082" source="ac-dashboard" target="bp-coordenar"/>
+    <element xsi:type="archimate:ServingRelationship" id="r083" source="ac-ml" target="bp-detectar"/>
+    <element xsi:type="archimate:ServingRelationship" id="r084" source="ac-visao" target="bp-praga"/>
+    <element xsi:type="archimate:ServingRelationship" id="r085" source="ac-alertas" target="bp-recomendar"/>
+    <element xsi:type="archimate:ServingRelationship" id="r086" source="ac-notif" target="bp-recomendar"/>
+    <!-- Application: Data access -->
+    <element xsi:type="archimate:AssociationRelationship" id="r090" source="ac-ingestao" target="do-ndvi"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r091" source="ac-ingestao" target="do-sensor"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r092" source="ac-visao" target="do-imagem"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r093" source="ac-ml" target="do-perfil"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r094" source="ac-alertas" target="do-historico"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r095" source="ac-auth" target="do-auditoria"/>
+    <!-- Technology: Nodes host application components -->
+    <element xsi:type="archimate:AssignmentRelationship" id="r100" source="tn-cloud" target="ac-gateway"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r101" source="tn-cloud" target="ac-ml"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r102" source="tn-cloud" target="ac-visao"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r103" source="tn-cloud" target="ac-alertas"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r104" source="tn-cloud" target="ac-notif"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r105" source="tn-cloud" target="ac-auth"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r106" source="tn-cloud" target="ac-ingestao"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r107" source="tn-cloud" target="ac-dashboard"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r108" source="tn-mobile" target="ac-mobile"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r109" source="tn-edge" target="dev-raspi"/>
+    <!-- Technology: System Software assigns to Nodes -->
+    <element xsi:type="archimate:AssignmentRelationship" id="r110" source="ss-docker" target="tn-cloud"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r111" source="ss-raspbian" target="tn-edge"/>
+    <element xsi:type="archimate:AssignmentRelationship" id="r112" source="ss-android" target="tn-mobile"/>
+    <!-- Technology: Services serve components -->
+    <element xsi:type="archimate:ServingRelationship" id="r120" source="ts-postgres" target="ac-alertas"/>
+    <element xsi:type="archimate:ServingRelationship" id="r121" source="ts-postgres" target="ac-ml"/>
+    <element xsi:type="archimate:ServingRelationship" id="r122" source="ts-postgres" target="ac-auth"/>
+    <element xsi:type="archimate:ServingRelationship" id="r123" source="ts-rabbitmq" target="ac-notif"/>
+    <element xsi:type="archimate:ServingRelationship" id="r124" source="ts-s3" target="ac-visao"/>
+    <element xsi:type="archimate:ServingRelationship" id="r125" source="ts-s3" target="ac-ml"/>
+    <element xsi:type="archimate:ServingRelationship" id="r126" source="ts-tls" target="ac-gateway"/>
+    <element xsi:type="archimate:ServingRelationship" id="r127" source="ts-mqtt" target="ac-ingestao"/>
+    <element xsi:type="archimate:ServingRelationship" id="r128" source="ts-sqlite" target="ac-mobile"/>
+    <!-- Technology: Networks -->
+    <element xsi:type="archimate:ServingRelationship" id="r130" source="cn-internet" target="tn-mobile"/>
+    <element xsi:type="archimate:ServingRelationship" id="r131" source="cn-internet" target="tn-cloud"/>
+    <element xsi:type="archimate:ServingRelationship" id="r132" source="cn-lora" target="tn-edge"/>
+    <!-- Technology: Artifacts realize components -->
+    <element xsi:type="archimate:RealizationRelationship" id="r140" source="ar-modelo" target="ac-ml"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r141" source="ar-yolo" target="ac-visao"/>
+    <element xsi:type="archimate:AssociationRelationship" id="r142" source="ar-dataset" target="ac-ingestao"/>
+    <!-- Technology: Satellite realizes NDVI data -->
+    <element xsi:type="archimate:RealizationRelationship" id="r143" source="tn-satelite" target="do-ndvi"/>
+    <element xsi:type="archimate:RealizationRelationship" id="r144" source="tn-edge" target="do-sensor"/>
+    <!-- Devices compose nodes -->
+    <element xsi:type="archimate:CompositionRelationship" id="r145" source="tn-edge" target="dev-sensores"/>
+  </folder>
+  <folder name="Views" id="fld-views" type="diagrams">
+    <!-- View 1: Motivation -->
+    <element xsi:type="archimate:ArchimateDiagramModel" name="01 — Visão de Motivação" id="view-motivation">
+      <child xsi:type="archimate:DiagramObject" id="vo001" archimateElement="sh-agricultor">
+        <bounds x="24" y="24" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo002" archimateElement="sh-cooperativa">
+        <bounds x="24" y="96" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo003" archimateElement="sh-emater">
+        <bounds x="24" y="168" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo004" archimateElement="sh-banco">
+        <bounds x="24" y="240" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo005" archimateElement="sh-ong">
+        <bounds x="24" y="312" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo010" archimateElement="dr-deserto">
+        <bounds x="220" y="24" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo011" archimateElement="dr-clima">
+        <bounds x="220" y="96" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo012" archimateElement="dr-credito">
+        <bounds x="220" y="168" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo020" archimateElement="goal-safra">
+        <bounds x="480" y="24" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo021" archimateElement="goal-democratizar">
+        <bounds x="480" y="96" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo022" archimateElement="goal-resiliencia">
+        <bounds x="480" y="168" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo023" archimateElement="goal-emater">
+        <bounds x="480" y="240" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo030" archimateElement="req-offline">
+        <bounds x="720" y="24" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo031" archimateElement="req-acessivel">
+        <bounds x="720" y="96" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo032" archimateElement="req-android">
+        <bounds x="720" y="168" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo033" archimateElement="req-lgpd">
+        <bounds x="720" y="240" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo034" archimateElement="req-latencia">
+        <bounds x="720" y="312" width="190" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo040" archimateElement="con-dataset">
+        <bounds x="480" y="336" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo041" archimateElement="con-prazo">
+        <bounds x="480" y="408" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vo042" archimateElement="con-equipe">
+        <bounds x="480" y="480" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc001" source="vo001" target="vo010" archimateElement="r001"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc002" source="vo001" target="vo020" archimateElement="r002"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc003" source="vo002" target="vo021" archimateElement="r003"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc004" source="vo003" target="vo023" archimateElement="r004"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc005" source="vo010" target="vo021" archimateElement="r005"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc006" source="vo011" target="vo020" archimateElement="r006"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc007" source="vo011" target="vo022" archimateElement="r007"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc008" source="vo021" target="vo031" archimateElement="r010"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vc009" source="vo021" target="vo030" archimateElement="r011"/>
+    </element>
+    <!-- View 2: Business Layer -->
+    <element xsi:type="archimate:ArchimateDiagramModel" name="02 — Camada de Negócio" id="view-business">
+      <child xsi:type="archimate:DiagramObject" id="vb001" archimateElement="ba-agricultor">
+        <bounds x="24" y="24" width="130" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb002" archimateElement="ba-gestor">
+        <bounds x="180" y="24" width="130" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb003" archimateElement="ba-extensionista">
+        <bounds x="336" y="24" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb004" archimateElement="ba-admin">
+        <bounds x="512" y="24" width="130" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb010" archimateElement="br-produtor">
+        <bounds x="24" y="120" width="130" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb011" archimateElement="br-gestor">
+        <bounds x="180" y="120" width="130" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb012" archimateElement="br-agronomo">
+        <bounds x="336" y="120" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb013" archimateElement="br-admin">
+        <bounds x="512" y="120" width="130" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb020" archimateElement="bp-monitorar">
+        <bounds x="24" y="240" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb021" archimateElement="bp-detectar">
+        <bounds x="204" y="240" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb022" archimateElement="bp-praga">
+        <bounds x="24" y="320" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb023" archimateElement="bp-recomendar">
+        <bounds x="384" y="240" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb024" archimateElement="bp-acompanhar">
+        <bounds x="564" y="240" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb025" archimateElement="bp-coordenar">
+        <bounds x="204" y="320" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb030" archimateElement="bs-diagnostico">
+        <bounds x="24" y="432" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb031" archimateElement="bs-alerta">
+        <bounds x="204" y="432" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb032" archimateElement="bs-recomendacao">
+        <bounds x="384" y="432" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb033" archimateElement="bs-praga">
+        <bounds x="564" y="432" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vb034" archimateElement="bs-visao">
+        <bounds x="744" y="432" width="150" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc001" source="vb001" target="vb010" archimateElement="r020"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc002" source="vb002" target="vb011" archimateElement="r021"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc003" source="vb003" target="vb012" archimateElement="r022"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc004" source="vb010" target="vb020" archimateElement="r024"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc005" source="vb011" target="vb025" archimateElement="r026"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc006" source="vb020" target="vb021" archimateElement="r030"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc007" source="vb021" target="vb023" archimateElement="r031"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc008" source="vb022" target="vb023" archimateElement="r032"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc009" source="vb023" target="vb024" archimateElement="r033"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc010" source="vb020" target="vb030" archimateElement="r040"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc011" source="vb021" target="vb031" archimateElement="r041"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc012" source="vb023" target="vb032" archimateElement="r042"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc013" source="vb030" target="vb001" archimateElement="r050"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc014" source="vb031" target="vb001" archimateElement="r051"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vbc015" source="vb034" target="vb002" archimateElement="r053"/>
+    </element>
+    <!-- View 3: Application Layer -->
+    <element xsi:type="archimate:ArchimateDiagramModel" name="03 — Camada de Aplicação" id="view-application">
+      <child xsi:type="archimate:DiagramObject" id="va001" archimateElement="ac-mobile">
+        <bounds x="24" y="24" width="160" height="100"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va002" archimateElement="ac-dashboard">
+        <bounds x="220" y="24" width="160" height="100"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va010" archimateElement="ac-gateway">
+        <bounds x="220" y="168" width="200" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va020" archimateElement="ac-ml">
+        <bounds x="24" y="288" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va021" archimateElement="ac-visao">
+        <bounds x="216" y="288" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va022" archimateElement="ac-alertas">
+        <bounds x="408" y="288" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va023" archimateElement="ac-notif">
+        <bounds x="600" y="288" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va024" archimateElement="ac-auth">
+        <bounds x="24" y="372" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va025" archimateElement="ac-ingestao">
+        <bounds x="216" y="372" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va030" archimateElement="do-ndvi">
+        <bounds x="24" y="480" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va031" archimateElement="do-sensor">
+        <bounds x="188" y="480" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va032" archimateElement="do-imagem">
+        <bounds x="352" y="480" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va033" archimateElement="do-perfil">
+        <bounds x="516" y="480" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="va034" archimateElement="do-historico">
+        <bounds x="680" y="480" width="140" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac001" source="va001" target="va010" archimateElement="r080"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac002" source="va002" target="va010" archimateElement="r082"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac003" source="va010" target="va020" archimateElement="r060"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac004" source="va010" target="va021" archimateElement="r061"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac005" source="va010" target="va022" archimateElement="r062"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac006" source="va010" target="va023" archimateElement="r063"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac007" source="va010" target="va024" archimateElement="r064"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac008" source="va025" target="va030" archimateElement="r090"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac009" source="va025" target="va031" archimateElement="r091"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac010" source="va021" target="va032" archimateElement="r092"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac011" source="va020" target="va033" archimateElement="r093"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vac012" source="va022" target="va034" archimateElement="r094"/>
+    </element>
+    <!-- View 4: Technology Layer -->
+    <element xsi:type="archimate:ArchimateDiagramModel" name="04 — Camada de Tecnologia" id="view-technology">
+      <child xsi:type="archimate:DiagramObject" id="vt001" archimateElement="tn-cloud">
+        <bounds x="120" y="24" width="640" height="340"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt002" archimateElement="ss-docker">
+        <bounds x="136" y="60" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt003" archimateElement="ts-postgres">
+        <bounds x="328" y="60" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt004" archimateElement="ts-rabbitmq">
+        <bounds x="540" y="60" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt005" archimateElement="ts-s3">
+        <bounds x="136" y="160" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt006" archimateElement="ts-tls">
+        <bounds x="348" y="160" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt007" archimateElement="ar-modelo">
+        <bounds x="540" y="160" width="180" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt008" archimateElement="ar-yolo">
+        <bounds x="136" y="260" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt009" archimateElement="ts-mqtt">
+        <bounds x="328" y="260" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt010" archimateElement="ar-dataset">
+        <bounds x="520" y="260" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt020" archimateElement="tn-edge">
+        <bounds x="24" y="420" width="220" height="150"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt021" archimateElement="dev-raspi">
+        <bounds x="40" y="456" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt022" archimateElement="ss-raspbian">
+        <bounds x="40" y="528" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt030" archimateElement="tn-mobile">
+        <bounds x="290" y="420" width="220" height="150"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt031" archimateElement="ss-android">
+        <bounds x="306" y="456" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt032" archimateElement="ts-sqlite">
+        <bounds x="306" y="528" width="160" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt040" archimateElement="tn-satelite">
+        <bounds x="560" y="420" width="220" height="100"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt050" archimateElement="cn-internet">
+        <bounds x="24" y="600" width="220" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramObject" id="vt051" archimateElement="cn-lora">
+        <bounds x="264" y="600" width="220" height="55"/>
+      </child>
+      <child xsi:type="archimate:DiagramModelConnection" id="vtc001" source="vt001" target="vt003" archimateElement="r120"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vtc002" source="vt004" target="vt001" archimateElement="r123"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vtc003" source="vt020" target="vt009" archimateElement="r132"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vtc004" source="vt050" target="vt030" archimateElement="r130"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vtc005" source="vt050" target="vt001" archimateElement="r131"/>
+      <child xsi:type="archimate:DiagramModelConnection" id="vtc006" source="vt051" target="vt020" archimateElement="r132"/>
+    </element>
+  </folder>
+</archimate:model>
