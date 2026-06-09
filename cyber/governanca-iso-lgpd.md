@@ -433,7 +433,7 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 | **Qualidade dos dados (V)** | Titular pode corrigir dados via app (tela "Editar Perfil"); dados de telemetria validados estatisticamente |
 | **Transparência (VI)** | Política de privacidade em linguagem acessível; tela de consentimento granular; DPO publicado |
 | **Segurança (VII)** | Controles técnicos documentados no SGSI (seção 2); criptografia em repouso e trânsito; RBAC |
-| **Prevenção (VIII)** | Threat model com 3 vetores de ataque e mitigações; plano de resposta a incidentes; auditorias semestrais |
+| **Prevenção (VIII)** | Threat model com 4 vetores de ataque e mitigações; plano de resposta a incidentes; auditorias semestrais |
 | **Não discriminação (IX)** | Sistema não utiliza dados para profiling discriminatório; modelo ML avalia risco agroclimático, não perfil pessoal |
 | **Responsabilização (X)** | Este RIPD documenta as medidas adotadas; DPO designado; logs de auditoria; conformidade verificada semestralmente |
 

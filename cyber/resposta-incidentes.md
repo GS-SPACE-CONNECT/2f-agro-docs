@@ -39,7 +39,7 @@ Este documento define o procedimento de resposta a incidentes de segurança da i
 
 | Documento | Relação com este plano |
 |---|---|
-| [Threat Model](threat-model.md) | Vetores VET-01, VET-02, VET-03 — base dos playbooks da seção 8 |
+| [Threat Model](threat-model.md) | Vetores VET-01, VET-02, VET-03, VET-04 — base dos playbooks da seção 8 |
 | [Arquitetura de Segurança](arquitetura-seguranca.md) | Controles técnicos (JWT, RBAC, SIEM, WAF, Vault) — ferramentas usadas na resposta |
 | [Governança ISO 27001 + LGPD](governanca-iso-lgpd.md) | SGSI (papéis, KPIs), LGPD (DPO, notificação ANPD) — obrigações legais e organizacionais |
 
