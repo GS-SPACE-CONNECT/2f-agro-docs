@@ -39,6 +39,7 @@ Os controles abaixo protegem **três perfis de usuário** com necessidades disti
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐                     │
 │  │ 🧑‍🌾 App   │    │ 👥 Web   │    │ 📡 Edge  │   ← canais de      │
 │  │ Mobile   │    │ Dashboard│    │ Estação  │     entrada          │
+│  │          │    │ planejado│    │          │                     │
 │  └────┬─────┘    └────┬─────┘    └────┬─────┘                     │
 │       │               │               │                            │
 │  ─────┼───────────────┼───────────────┼──── TLS 1.3 ──────────    │
@@ -80,8 +81,8 @@ Os controles abaixo protegem **três perfis de usuário** com necessidades disti
 | **Quem exige MFA** | Cooperativas e administradores (perfis com acesso a dados agregados de múltiplas propriedades) |
 | **Agricultores** | MFA **opcional** — o agricultor familiar pode não ter segundo dispositivo ou e-mail; forçar MFA seria barreira de acesso |
 | **Método primário** | TOTP (Time-based One-Time Password) — compatível com Google Authenticator, Authy |
-| **Método secundário** | SMS OTP como fallback para regiões sem internet estável (degradação planejada) |
-| **Implementação** | ASP.NET Identity (`UserManager.SetTwoFactorEnabledAsync`) integrado ao Serviço Auth |
+| **Método secundário** | SMS OTP como fallback para agricultores sem smartphone compatível com app autenticador (o TOTP é gerado offline no aparelho; o SMS depende de cobertura celular). O NIST SP 800-63B classifica SMS OTP como canal restrito — mantido aqui como tradeoff consciente de acessibilidade, com TOTP preferencial |
+| **Implementação (projetada)** | ASP.NET Identity (`UserManager.SetTwoFactorEnabledAsync`) integrado ao Serviço Auth — o MVP entregue ainda não inclui MFA (ver nota da § 1.2) |
 
 **Fluxo de login com MFA:**
 
@@ -101,6 +102,8 @@ Usuário                    API Gateway              Serviço Auth
 ```
 
 ### 1.2 JWT com Claims
+
+> **Estado atual (MVP acadêmico):** o backend entregue emite JWT **HS256** (chave simétrica) com access token de **8 h**, claims `sub`/`email`/`name`/`jti` e issuer `FiapAgro.Api`, sem refresh token. O que segue é a **arquitetura-alvo** de produção, que adiciona RS256 com chave no Vault, refresh token com rotação, revogação por `jti` e claims de autorização (`role`, `propriedade_id`) — pré-requisito para o RBAC da §1.3.
 
 Os tokens JWT carregam claims que identificam o papel e o escopo do usuário, permitindo decisões de autorização sem consulta ao banco a cada request.
 
@@ -247,25 +250,25 @@ builder.Services.AddHsts(options =>
 | Dado | Mecanismo | Detalhe |
 |---|---|---|
 | **Banco PostgreSQL** | Criptografia de coluna via `pgcrypto` (campos sensíveis) + criptografia full-disk (LUKS/dm-crypt) | Dados em disco ilegíveis sem a chave mestra; chave mestra armazenada no Vault |
-| **Backups** | AES-256-GCM antes do upload para S3 | `pg_dump` → criptografia com chave rotacionada mensalmente → upload; chave no Vault |
+| **Backups** | AES-256-CBC + HMAC-SHA256 (`openssl enc -pbkdf2`) antes do upload para S3 | `pg_dump` → criptografia com chave rotacionada mensalmente → upload; chave no Vault |
 | **Modelos ML (.pkl)** | AES-256 no armazenamento (S3 server-side encryption) | Protege propriedade intelectual do modelo treinado contra exfiltração |
-| **Logs arquivados** | AES-256 em repouso no bucket de long-term storage | Compliance — logs de auditoria intactos por 12 meses |
-| **Dados locais no app** | Expo SecureStore (Keychain no iOS, Keystore no Android) | Tokens JWT e dados sensíveis do agricultor protegidos no device |
+| **Logs arquivados** | AES-256 em repouso no bucket de long-term storage | Compliance — logs operacionais: 90 dias (hot) + 12 meses (cold); trilha de auditoria de acesso a PII: 5 anos em cold storage (o art. 37 da LGPD obriga o registro das operações, mas não fixa prazo — 5 anos é política interna alinhada ao prazo prescricional de reparação civil) |
+| **Dados locais no app** | Expo SecureStore (Keychain no iOS, Keystore no Android) | Tokens JWT e dados pessoais do agricultor protegidos no device |
 
-**Algoritmo padrão:** AES-256-GCM (Galois/Counter Mode) — oferece confidencialidade **e** integridade (authentication tag) em uma única operação.
+**Algoritmo padrão:** AES-256-GCM (Galois/Counter Mode) — oferece confidencialidade **e** integridade (authentication tag) em uma única operação. Exceção: os backups usam AES-256-CBC + HMAC-SHA256, pois o utilitário `enc` do OpenSSL não suporta modos AEAD.
 
 ### 2.3 bcrypt em Senhas
 
-Senhas nunca são armazenadas em texto plano ou com hashing fraco. O 2F-AGRO utiliza **bcrypt** com custo adaptativo.
+Senhas nunca são armazenadas em texto plano ou com hashing fraco. O MVP entregue implementa **PBKDF2/SHA-256 com 10.000 iterações e salt de 128 bits** via `Rfc2898DeriveBytes.Pbkdf2` — código real no repo [2f-agro-backend](https://github.com/GS-SPACE-CONNECT/2f-agro-backend). A migração para **bcrypt** com custo adaptativo, detalhada a seguir, é a **evolução planejada**.
 
 | Parâmetro | Valor | Justificativa |
 |---|---|---|
-| **Algoritmo** | bcrypt | Resistente a ataques de GPU/ASIC por design (CPU-intensivo e resistente a paralelismo em GPU); amplamente auditado |
-| **Work factor (custo)** | 12 (4.096 iterações) | Equilíbrio entre segurança e tempo de resposta aceitável (~250ms no servidor) |
+| **Algoritmo** | bcrypt (evolução planejada) | Resistente a ataques de GPU por design (CPU-intensivo e resistente a paralelismo em GPU); para resistência a hardware dedicado (FPGA/ASIC), a migração a Argon2id (memory-hard) já está prevista; amplamente auditado |
+| **Work factor (custo)** | 12 (2^12 = 4.096 iterações) | Equilíbrio entre segurança e tempo de resposta aceitável (~250ms no servidor) |
 | **Salt** | 128 bits, gerado automaticamente pelo bcrypt | Impede ataques de rainbow table |
 | **Migração futura** | Argon2id preparado como fallback | ASP.NET Identity suporta troca transparente de hasher; migração sob demanda no próximo login |
 
-**Implementação no Serviço Auth (BCrypt.Net-Next + ASP.NET Identity):**
+**Implementação de referência (evolução planejada) — BCrypt.Net-Next + ASP.NET Identity:**
 
 ```csharp
 // Hasher customizado substituindo o PBKDF2 padrão do Identity por bcrypt
@@ -292,13 +295,13 @@ builder.Services.AddScoped<IPasswordHasher<ApplicationUser>,
 **Política de senhas:**
 
 - Mínimo 8 caracteres (simplicidade para o público rural)
-- Verificação contra lista de senhas vazadas (HaveIBeenPwned API, offline via k-anonymity)
+- Verificação contra lista de senhas vazadas (API do HaveIBeenPwned com k-anonymity — apenas o prefixo de 5 caracteres do hash SHA-1 é enviado; a senha nunca sai do nosso servidor)
 - Bloqueio temporário (15 min) após 5 tentativas falhas consecutivas
 - Sem exigência de caracteres especiais (pesquisas mostram que comprimento supera complexidade)
 
 ### 2.4 Anonimização de Coordenadas em Logs
 
-A geolocalização das propriedades é dado sensível sob a LGPD (pode identificar o agricultor e expor sua propriedade a riscos físicos). Em logs operacionais, as coordenadas são **truncadas a 2 casas decimais**, resultando em precisão de ~1,1 km — suficiente para diagnóstico técnico, insuficiente para localização exata.
+A geolocalização das propriedades é **dado pessoal** (art. 5º, I da LGPD) com **proteção reforçada pelo risco contextual** — não integra o rol taxativo de dados sensíveis do art. 5º, II, mas pode identificar o agricultor e expor sua propriedade a riscos físicos, motivo pelo qual o 2F-AGRO aplica voluntariamente padrão análogo ao do art. 11, como medida de transparência. Em logs operacionais, as coordenadas são **truncadas a 2 casas decimais**, resultando em precisão de ~1,1 km — suficiente para diagnóstico técnico, insuficiente para localização exata.
 
 **Antes (dado real):**
 
@@ -318,7 +321,7 @@ latitude: -8.04, longitude: -34.87
 public class AnonimizadorCoordenadas
 {
     /// <summary>
-    /// Trunca coordenada para 2 casas decimais (~1 km de imprecisão).
+    /// Trunca coordenada para 2 casas decimais (~1,1 km de imprecisão).
     /// Usado exclusivamente em logs — dados reais preservados no banco.
     /// </summary>
     public static double Truncar(double coordenada)
@@ -363,9 +366,9 @@ public class RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggi
 |---|---|---|
 | Banco de dados (PostGIS) | Total (~10 cm) | Microsserviço Alertas (para cálculos agronômicos) |
 | API de resposta ao agricultor | Total (sua própria propriedade) | Apenas o dono |
-| API de resposta à cooperativa | Truncada a 3 casas (~100 m) | Gestores da cooperativa (visão de mapa regional) |
-| Logs operacionais | Truncada a 2 casas (~1 km) | Equipe de operações |
-| Logs exportados para SIEM | Truncada a 2 casas (~1 km) | Equipe de segurança |
+| API de resposta à cooperativa | Truncada a 2 casas (~1,1 km) | Gestores da cooperativa (visão de mapa regional) |
+| Logs operacionais | Truncada a 2 casas (~1,1 km) | Equipe de operações |
+| Logs exportados para SIEM | Truncada a 2 casas (~1,1 km) | Equipe de segurança |
 | Dados analíticos / relatórios | Agregados por município | Público / EMATER |
 
 ---
@@ -468,6 +471,8 @@ A stack de observabilidade de segurança utiliza **Grafana + Loki + Promtail** �
 │                      Loki                           │
 │  (armazenamento de logs indexados por label)        │
 │  • Retenção: 90 dias (hot) + 12 meses (S3 cold)   │
+│  • Trilha de auditoria de acesso a PII: exportada  │
+│    mensalmente p/ cold storage, 5 anos (ver §2.2)  │
 │  • Sem full-text index — custo baixo               │
 └────────────────────────┬───────────────────────────┘
                          │
@@ -535,7 +540,7 @@ path "secret/data/2f-agro/backup/*" {
 
 ### 3.5 Certificate Pinning no App Mobile
 
-O app mobile implementa **certificate pinning** para impedir ataques Man-in-the-Middle, mesmo que o atacante comprometa uma CA (Certificate Authority) ou instale um certificado malicioso no device.
+A arquitetura-alvo prevê **certificate pinning** no app mobile (projetado — ainda não presente no MVP entregue) para impedir ataques Man-in-the-Middle, mesmo que o atacante comprometa uma CA (Certificate Authority) ou instale um certificado malicioso no device.
 
 | Aspecto | Detalhe |
 |---|---|
@@ -585,7 +590,7 @@ O rate limit protege contra abuso, DDoS na camada de aplicação, e tentativas d
 | `POST /auth/login` | 5 req/min | 1 minuto | Anti brute-force |
 | `POST /auth/register` | 3 req/hora | 1 hora | Anti criação massiva de contas |
 | `POST /auth/mfa` | 5 req/min | 1 minuto | Anti brute-force de OTP |
-| `POST /ingestao/telemetria` | 60 req/min | 1 minuto | Estação envia a cada ~30s; margem para retries |
+| `POST /ingestao/telemetria` | 60 req/min | 1 minuto | Estação envia a cada 60 s; margem ampla para retries após reconexão |
 | `POST /diagnosticos` | 10 req/min | 1 minuto | Uso normal: 1-2 fotos por sessão |
 | `GET /alertas` | 30 req/min | 1 minuto | Polling do app; margem confortável |
 

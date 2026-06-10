@@ -45,6 +45,8 @@ Este documento define o procedimento de resposta a incidentes de segurança da i
 
 **Premissa operacional:** o 2F-AGRO atende agricultores familiares cujo sustento depende dos alertas agroclimáticos da plataforma. Um incidente de segurança não é apenas um problema técnico — pode significar perda de safra, prejuízo financeiro e risco físico para o produtor. A resposta deve ser rápida e priorizar a proteção do agricultor.
 
+> **TL;DR — Se o 2F-AGRO for invadido:** o SIEM ou o WAF detectam (alertas automáticos, § 4); a **contenção** isola o componente em 0–30 min (quarentena de rede, revogação de tokens, modo degradado read-only que mantém os alertas acessíveis ao agricultor, § 5); a **erradicação** remove a causa em até 4 h (forense, patch, rotação de chaves, § 6); a **recuperação** restaura a operação normal em até 48 h (restore validado de backup, monitoramento reforçado, § 7). O DPO notifica a ANPD em até 3 dias úteis (Resolução CD/ANPD nº 15/2024) quando há dados pessoais envolvidos, e o post-mortem alimenta o threat model (§ 10).
+
 ---
 
 ## 2. Classificação de incidentes
@@ -69,7 +71,7 @@ O CSIRT (Computer Security Incident Response Team) do 2F-AGRO é composto por to
 | Papel no incidente | Responsável | Atribuições durante o incidente |
 |---|---|---|
 | **Coordenador de incidente** | jota ([@jota0802](https://github.com/jota0802) — Gestor de SI) | Declarar o incidente; classificar severidade; coordenar ações; manter timeline; decidir escalar ou desescalar; convocar post-mortem |
-| **DPO (Encarregado de Dados)** | roji ([@roji-menez](https://github.com/roji-menez)) | Avaliar se houve violação de dados pessoais (LGPD); preparar notificação à ANPD (72 h); comunicar titulares afetados; documentar impacto em PII |
+| **DPO (Encarregado de Dados)** | roji ([@roji-menez](https://github.com/roji-menez)) | Avaliar se houve violação de dados pessoais (LGPD); preparar notificação à ANPD em 3 dias úteis (Resolução CD/ANPD nº 15/2024); comunicar titulares afetados; documentar impacto em PII |
 | **Resposta Backend / API** | brunão ([@brnleao](https://github.com/brnleao)) + ruan ([@DevRuanVieira](https://github.com/DevRuanVieira)) | Isolar microsserviços; revogar tokens JWT; ativar modo degradado; aplicar patches emergenciais; rotacionar credenciais no Vault |
 | **Resposta ML / IoT** | lucca ([@lucksza](https://github.com/lucksza)) | Desconectar estações comprometidas; validar integridade do modelo ML; executar rollback de modelo; quarentenar dados anômalos |
 | **Apoio geral** | Todos | Preservar evidências; atualizar timeline no canal de comunicação; executar tarefas delegadas pelo coordenador |
@@ -204,6 +206,8 @@ kubectl exec -n 2f-agro <outro-pod> -- curl -s --max-time 5 http://<servico-isol
 | **Quando** | Sempre que houver suspeita de comprometimento de credenciais, sessão hijacking ou acesso não autorizado |
 | **Como** | Adicionar o `jti` (ID único do token) à lista de revogação no Redis. O middleware de autenticação do API Gateway consulta essa lista a cada request. Para revogação em massa: rotacionar a chave privada RS256 no Vault (invalida todos os tokens existentes). |
 
+> **Nota — MVP vs arquitetura-alvo:** a blocklist no Redis e a rotação RS256/Vault fazem parte da arquitetura-alvo (ver nota da § 1.2 da [Arquitetura de Segurança](arquitetura-seguranca.md)). No MVP entregue (HS256, sem revogação por `jti`), a revogação em massa é feita trocando a chave simétrica de assinatura e reiniciando a API — os passos abaixo descrevem o procedimento-alvo.
+
 **Revogação individual (por `jti`):**
 
 ```bash
@@ -227,7 +231,7 @@ kubectl rollout restart deployment/auth-service -n 2f-agro
 # 4. Usuários precisam refazer login — impacto aceitável em SEV-1
 ```
 
-**Validação no API Gateway (C# .NET 8) — já implementado:**
+**Validação no API Gateway (C# .NET 8) — implementação de referência (proposta):**
 
 ```csharp
 // Middleware que consulta a blocklist Redis antes de aceitar o JWT
@@ -358,7 +362,7 @@ Ações de contenção já executadas: ____
 Coordenador do incidente: ____
 ```
 
-**Obrigação LGPD (art. 48):** se confirmado o comprometimento de dados pessoais, o DPO tem **72 horas** (prazo recomendado pela ANPD, alinhado com o GDPR) para comunicar a ANPD e os titulares afetados. O modelo de notificação está na seção 9.
+**Obrigação LGPD (art. 48):** se confirmado o comprometimento de dados pessoais, o DPO tem **3 dias úteis** (prazo normativo da Resolução CD/ANPD nº 15/2024, art. 6º — análogo às 72 h do GDPR art. 33) para comunicar a ANPD e os titulares afetados. O modelo de notificação está na seção 9.
 
 ---
 
@@ -393,8 +397,7 @@ Coordenador do incidente: ____
   | line_format "{{.timestamp}} temp={{.temperatura}} umid={{.umidade}} vento={{.vento}}"
 
 # 4. Erros 401/403 concentrados (possível tentativa de privilege escalation)
-{app="api-gateway"} | json | status_code=~"401|403"
-  | rate({app="api-gateway"} | json | status_code=~"401|403" [5m]) > 10
+rate({app="api-gateway"} | json | status_code=~"401|403" [5m]) > 10
 
 # 5. Requests com user-agents de ferramentas de ataque
 {app="api-gateway"} |~ "sqlmap|nikto|dirbuster|gobuster|hydra"
@@ -539,7 +542,7 @@ curl -s -H "Authorization: Bearer <token-antigo>" \
 |---|---|
 | **Quem executa** | brunão (responsável por backups) |
 | **Quando** | Quando dados foram alterados/corrompidos pelo atacante e não é possível reverter cirurgicamente |
-| **RPO alvo** | ≤ 24 horas (backup diário criptografado — AES-256-GCM) |
+| **RPO alvo** | ≤ 24 horas (backup diário criptografado — AES-256-CBC + HMAC-SHA256) |
 | **RTO alvo** | ≤ 4 horas (tempo máximo para restaurar a operação) |
 
 **Procedimento de restore:**
@@ -551,12 +554,13 @@ aws s3 ls s3://2f-agro-backups/ --recursive | sort -k1,2
 
 # 2. Baixar e descriptografar o backup
 aws s3 cp s3://2f-agro-backups/<backup-limpo>.sql.enc ./
-openssl enc -d -aes-256-gcm -in <backup-limpo>.sql.enc \
+# AES-256-CBC + HMAC-SHA256: o utilitário enc do OpenSSL não suporta modos AEAD (GCM)
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -in <backup-limpo>.sql.enc \
   -out backup-limpo.sql -pass file:<chave-do-vault>
 
 # 3. Restaurar em banco temporário primeiro (validação)
 createdb 2f_agro_restore_temp
-pg_restore -d 2f_agro_restore_temp backup-limpo.sql
+psql -h <host> -U <user> -d 2f_agro_restore_temp -f backup-limpo.sql
 
 # 4. Validar integridade (seção 7.2)
 
@@ -594,7 +598,7 @@ Próximos passos: ____
 ETA para operação normal: ____
 ```
 
-#### 7.3.2 Notificação à ANPD (até 72 h — se houver violação de PII)
+#### 7.3.2 Notificação à ANPD (até 3 dias úteis — Resolução CD/ANPD nº 15/2024 — se houver violação de PII)
 
 Conforme art. 48 da LGPD, o DPO (roji) prepara e envia notificação à ANPD:
 
@@ -718,9 +722,9 @@ Para cada vetor de ataque do Threat Model, existe um playbook específico que de
 | Fase | Ação | Responsável |
 |---|---|---|
 | **Detecção** | SIEM detecta volume anormal de requests de listagem (>100 registros em 1h); WAF detecta padrão de scraping (paginação sequencial completa); reporte externo (pesquisador/CERT) | SIEM + WAF |
-| **Contenção** | Bloquear IP do atacante no WAF; revogar tokens JWT suspeitos; ativar modo degradado (read-only); notificar DPO **imediata­mente** (dados pessoais envolvidos — SEV-1 automático) | brunão + ruan + jota |
+| **Contenção** | Bloquear IP do atacante no WAF; revogar tokens JWT suspeitos; ativar modo degradado (read-only); notificar DPO **imediatamente** (dados pessoais envolvidos — SEV-1 automático) | brunão + ruan + jota |
 | **Erradicação** | Identificar endpoint vulnerável; aplicar patch (`[Authorize]` + owner check); adicionar teste de integração para prevenir regressão; auditar todos os endpoints com `GET` para verificar cobertura de autorização | brunão + ruan |
-| **Recuperação** | Verificar extensão do vazamento (quais dados, quantos titulares); DPO notifica ANPD em até 72h; notificar titulares afetados (push notification + cooperativa); recomendar troca de senha; se CPF vazou: orientar agricultores sobre monitoramento de fraude | roji + jota |
+| **Recuperação** | Verificar extensão do vazamento (quais dados, quantos titulares); DPO notifica ANPD em até 3 dias úteis (Resolução CD/ANPD nº 15/2024); notificar titulares afetados (push notification + cooperativa); recomendar troca de senha; se CPF vazou: orientar agricultores sobre monitoramento de fraude | roji + jota |
 | **Pós-incidente** | Implementar SAST obrigatório no CI para detectar endpoints sem `[Authorize]`; adicionar rate limiting mais restritivo em endpoints de listagem; atualizar threat model e RIPD | jota |
 
 ### 8.4 Playbook VET-04 — DDoS contra a API Gateway em período de safra
@@ -757,13 +761,15 @@ Backend             —              Se             Acionado       Acionado
 ML/IoT (lucca)      —              Se             Acionado       Acionado
                                    aplicável
 
-ANPD                —              —              Se PII         Notificada
-                                                  confirmado     em até 72h
+ANPD                —              —              Se PII         Notificada em
+                                                  confirmado     até 3 dias úteis ¹
 
 Stakeholders        —              —              Informados     Informados
 (cooperativas)                                    após           após
                                                   contenção      contenção
 ```
+
+¹ Prazo normativo da Resolução CD/ANPD nº 15/2024 (art. 6º).
 
 ### 9.2 Regras de escalação
 
@@ -771,7 +777,7 @@ Stakeholders        —              —              Informados     Informados
 2. **Apenas o coordenador** declara SEV-1 ou SEV-2 (ou qualquer membro em sua ausência, com revisão posterior).
 3. Se o coordenador não responder em **15 minutos**, o próximo na cadeia (brunão → ruan → lucca → roji) assume a coordenação.
 4. **Desescalação** (reduzir severidade) requer confirmação do coordenador com justificativa documentada.
-5. Um incidente só é **encerrado** quando todas as ações de contenção e erradicação estão concluídas e verificadas.
+5. Um incidente só é **encerrado** quando todas as ações de contenção e erradicação estão concluídas e verificadas **e a recuperação foi validada** (seção 7.2).
 
 ---
 
@@ -783,10 +789,10 @@ O desempenho do processo de resposta a incidentes é medido pelos seguintes indi
 |---|---|---|
 | **MTTD (Mean Time to Detect)** | ≤ 15 min para SEV-1/SEV-2 | Tempo entre início da atividade maliciosa e primeiro alerta |
 | **MTTC (Mean Time to Contain)** | ≤ 30 min para SEV-1/SEV-2 | Tempo entre declaração do incidente e contenção confirmada |
-| **MTTR (Mean Time to Resolve)** | ≤ 4 h para SEV-1/SEV-2 | Tempo entre declaração e encerramento do incidente |
+| **MTTR (Mean Time to Resolve)** | ≤ 48 h para SEV-1/SEV-2 | Tempo entre a declaração do incidente e o encerramento (recuperação validada) |
 | **Taxa de post-mortem** | 100% para SEV-1/SEV-2 | Post-mortems realizados / incidentes SEV-1+SEV-2 |
 | **Reincidência** | 0% | Incidentes com mesma causa raiz nos 6 meses seguintes |
-| **Conformidade LGPD** | 100% | Notificações à ANPD dentro do prazo de 72h / total de incidentes com PII |
+| **Conformidade LGPD** | 100% | Notificações à ANPD dentro do prazo de 3 dias úteis (Resolução CD/ANPD nº 15/2024) / total de incidentes com PII |
 | **Ações corretivas implementadas** | ≥ 90% em 30 dias | Action items do post-mortem concluídos no prazo |
 
 **Revisão:** métricas consolidadas e apresentadas na auditoria semestral do SGSI.
@@ -876,7 +882,8 @@ ____
 - **ISO/IEC 27035:2023** — Information Security Incident Management
 - **LGPD — Lei nº 13.709/2018** (arts. 46, 48, 49) — <https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm>
 - **ANPD** — Comunicação de Incidentes de Segurança — <https://www.gov.br/anpd/pt-br>
-- **GDPR Art. 33** — Notification of a personal data breach (referência para prazo de 72h)
+- **Resolução CD/ANPD nº 15/2024** — Regulamento de Comunicação de Incidente de Segurança
+- **GDPR Art. 33** — Notification of a personal data breach (referência comparada — prazo de 72 h no regime europeu)
 - **OWASP Incident Response Project** — <https://owasp.org/www-project-incident-response/>
 - Threat Model do 2F-AGRO — `cyber/threat-model.md`
 - Arquitetura de Segurança do 2F-AGRO — `cyber/arquitetura-seguranca.md`

@@ -55,7 +55,13 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 │   ┌─────────┐  ┌──────────┐  ┌──────────┐            │
 │   │ Auth +  │  │ Alertas  │  │ ML Agro  │            │
 │   │ Audit   │  │ Agro     │  │ (Python) │            │
-│   └─────────┘  └──────────┘  └──────────┘            │
+│   └────┬────┘  └────┬─────┘  └────┬─────┘            │
+│        └────────────┼─────────────┘                   │
+│                     ▼                                 │
+│        ┌─────────────────────────┐                    │
+│        │ 🐘 PostgreSQL + PostGIS │                    │
+│        │     (alertas + PII)     │                    │
+│        └─────────────────────────┘                    │
 │                                                        │
 │   ┌───────────────────────┐  ┌──────────────────┐     │
 │   │ Ingestão Sat/Edge     │  │ Visão Praga      │     │
@@ -96,10 +102,10 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 | **ID** | VET-01 |
 | **Ativo alvo** | A5 (Estação edge IoT), A1 (Geolocalização) |
 | **Categoria STRIDE** | Information Disclosure + Spoofing |
-| **Descrição do ataque** | Atacante posiciona-se entre a estação meteorológica (Raspberry Pi na fazenda) e o gateway LoRaWAN da cooperativa — ou entre a estação e a torre 4G — e intercepta os pacotes de telemetria em trânsito. Os pacotes contêm: leituras de sensores (temperatura, umidade, vento, chuva), timestamp e **coordenadas GPS da estação** (que correspondem à localização exata da propriedade). |
+| **Descrição do ataque** | Atacante posiciona-se entre a estação meteorológica (Raspberry Pi na fazenda) e o gateway LoRaWAN da cooperativa — ou entre a estação e a torre 4G — e intercepta os pacotes de telemetria em trânsito. Os pacotes contêm: leituras de sensores (temperatura, umidade, vento, chuva), timestamp e **coordenadas GPS da estação** (que correspondem à localização exata da propriedade). Na variante ativa, o atacante se passa pelo gateway LoRaWAN legítimo (rogue gateway) para capturar e reinjetar pacotes — daí a categoria Spoofing e a mitigação mTLS (M1.3). |
 | **Pré-condição** | Acesso físico à área rural (baixa barreira no semiárido) ou comprometimento do gateway LoRaWAN da cooperativa |
-| **Cenário narrativo** | Um concorrente desleal ou quadrilha de roubo de safra intercepta as transmissões LoRa de fazendas no entorno de Petrolina-PE. Com as coordenadas GPS e os dados de produtividade (inferidos via NDVI alto + umidade adequada = safra boa), identifica propriedades lucrativas para roubo direcionado. |
-| **Impacto** | **Alto** — exposição de dado pessoal sensível (LGPD); risco de violência física contra o agricultor; perda patrimonial; quebra de confiança na plataforma |
+| **Cenário narrativo** | Um concorrente desleal ou quadrilha de roubo de safra intercepta as transmissões LoRa de fazendas no entorno de Petrolina-PE. Com as coordenadas GPS interceptadas, consulta o NDVI público (Sentinel-2) daquela área e cruza com a umidade interceptada para identificar safras promissoras — e, com isso, propriedades lucrativas para roubo direcionado. |
+| **Impacto** | **Alto** — exposição de dado pessoal com proteção reforçada (LGPD); risco de violência física contra o agricultor; perda patrimonial; quebra de confiança na plataforma |
 | **Probabilidade** | **Média** — LoRaWAN opera em frequência aberta (915 MHz no Brasil); equipamento SDR (Software Defined Radio) custa ~R$ 200; área rural sem monitoramento |
 | **Risco** | **Alto** (impacto alto × probabilidade média) |
 
@@ -164,7 +170,7 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 | M3.2 | **Autorização a nível de objeto (RBAC + owner check):** agricultor só acessa sua própria propriedade; cooperativa acessa apenas propriedades dos seus membros; EMATER acessa dados agregados (anonimizados). Implementação via `IAuthorizationHandler` customizado que valida `propriedadeId == claims.userId` | Autorização |
 | M3.3 | **Filtragem de campos por role (field-level security):** o serializer JSON aplica filtro por role — `agricultor` nunca recebe CPF de outro agricultor; `cooperativa` recebe coordenadas truncadas (2 casas decimais); apenas `admin` vê dados completos, e com log de auditoria | Dados |
 | M3.4 | **Rate limiting e throttling:** 100 requisições/minuto por IP; 20 req/min por token; requests de listagem paginadas com `size` máximo de 50; detecção de scraping (padrão de paginação sequencial completa) | Disponibilidade |
-| M3.5 | **Logging e auditoria de acesso a PII:** toda consulta que retorna dados pessoais gera registro no log de auditoria (quem, quando, qual dado, IP de origem) com retenção de 5 anos (LGPD art. 37); alertas automáticos para consultas em volume anormal (>100 registros em 1h) | Monitoramento |
+| M3.5 | **Logging e auditoria de acesso a PII:** toda consulta que retorna dados pessoais gera registro no log de auditoria (quem, quando, qual dado, IP de origem) — registro das operações conforme LGPD art. 37; retenção de 5 anos definida por política interna, alinhada ao prazo prescricional de reparação civil; alertas automáticos para consultas em volume anormal (>100 registros em 1h) | Monitoramento |
 | M3.6 | **Testes automatizados de autorização (CI/CD):** suite de testes de integração que verifica: (a) endpoints sem `[Authorize]` falham no CI; (b) agricultor A não consegue acessar dados de agricultor B; (c) listagem completa retorna 403 para roles não-admin | Prevenção |
 | M3.7 | **Política de minimização de dados (LGPD art. 6º, III):** endpoints retornam apenas os campos estritamente necessários para cada operação; CPF nunca trafega em responses de listagem; coordenadas são armazenadas criptografadas (AES-256) e só descriptografadas no backend sob demanda | Dados |
 
@@ -216,6 +222,8 @@ Este documento modela as ameaças à plataforma **2F-AGRO** — sistema que comb
 ──────────────┴──────────┴──────────┴──────────────────┴──────────────
  Probabilidade      Impacto →
 ```
+
+**Nota — Repúdio (R):** a categoria não tem vetor dedicado porque é mitigada transversalmente pelos logs de auditoria imutáveis (M3.5), que registram quem acessou/alterou qual dado e quando, em todas as operações sensíveis.
 
 ---
 

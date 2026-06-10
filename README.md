@@ -19,7 +19,7 @@ Centralizar todas as entregas documentais: ArchiMate (`.archi`), Backlog, Pitch,
 ├── archimate/         ← motivação, negócio, aplicação, tecnologia + .archi
 ├── backlog/           ← 20-25 histórias priorizadas
 ├── pitch/             ← roteiro, slides, vídeo 3 min
-└── cyber/             ← threat-model, controles, lgpd-iso, resposta-incidentes
+└── cyber/             ← threat-model, arquitetura-seguranca, governanca-iso-lgpd, resposta-incidentes
 ```
 
 ## 📊 QA (100 pts)
@@ -28,10 +28,10 @@ Centralizar todas as entregas documentais: ArchiMate (`.archi`), Backlog, Pitch,
 - **Vídeo Pitch** até 3 min — **20 pts**
 
 ## 🔐 Cyber (10 pts)
-- Threat Modeling (7 ativos + 4 vetores) — 2 pts
-- Arquitetura de Segurança (acesso + dados + infra) — 3 pts
-- Governança (ISO 27001 + LGPD) — 2 pts
-- **Plano de Resposta a Incidentes** — 3 pts
+- [Threat Modeling](cyber/threat-model.md) (7 ativos + 4 vetores) — 2 pts
+- [Arquitetura de Segurança](cyber/arquitetura-seguranca.md) (acesso + dados + infra) — 3 pts
+- [Governança](cyber/governanca-iso-lgpd.md) (ISO 27001 + LGPD) — 2 pts
+- **[Plano de Resposta a Incidentes](cyber/resposta-incidentes.md)** — 3 pts
 
 ## 🛠️ Ferramentas
 - **Archi 5.9** (já em `/Downloads`)
