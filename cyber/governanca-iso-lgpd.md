@@ -72,34 +72,38 @@ A 2F-AGRO compromete-se a proteger a **confidencialidade**, **integridade** e **
 | **Público** | Informação de acesso livre | Dados climáticos agregados por região, alertas públicos, documentação da API pública | Sem restrição de acesso |
 | **Interno** | Uso restrito à equipe e parceiros | Código-fonte, documentação técnica, logs de sistema, métricas de uso | Autenticação obrigatória; repositórios privados |
 | **Confidencial** | Acesso restrito por função | Dados pessoais (nome, CPF, e-mail), dados produtivos individuais, credenciais de serviço | Criptografia em repouso (AES-256) e em trânsito (TLS 1.3); RBAC; log de acesso |
-| **Proteção reforçada** | Dado pessoal (LGPD art. 5º, I) com proteção reforçada pelo risco contextual (perfilamento + risco à integridade física — art. 12, §2º c/c art. 11) | Geolocalização precisa das propriedades, dados financeiros (renda, crédito Pronaf) | Tudo de "Confidencial" + consentimento qualificado; acesso auditado; anonimização em logs |
+| **Proteção reforçada** | Dado pessoal (LGPD art. 5º, I) com proteção reforçada pelo risco contextual (perfilamento + risco à integridade física — art. 12, §2º c/c art. 11) | Geolocalização precisa das propriedades, dados financeiros (renda, crédito Pronaf) | Tudo de "Confidencial" + tela de transparência destacada (padrão análogo ao art. 11); acesso auditado; anonimização em logs |
 
 ### 2.5 Política de controle de acesso
 
 | Controle | Implementação |
 |---|---|
-| **Autenticação** | JWT com expiração de 1h (access token) + 7d (refresh token); MFA obrigatório para cooperativas e admins (TOTP via app autenticador) |
-| **Autorização (RBAC)** | 4 roles: `agricultor`, `cooperativa`, `emater`, `admin`. Cada role tem escopo de acesso definido por `IAuthorizationHandler` customizado |
-| **Owner check** | Agricultor só acessa seus próprios dados (`propriedadeId == claims.userId`); cooperativa acessa apenas membros vinculados |
+| **Autenticação** | Implementado: JWT (HS256) com access token de 8h, claims `sub`/`email`/`name`/`jti`, sem refresh token nem revogação. Projetado: refresh token e MFA obrigatório para cooperativas e admins (TOTP via app autenticador) |
+| **Autorização (RBAC)** | Projetado — 4 roles: `agricultor`, `cooperativa`, `emater`, `admin`. Cada role tem escopo de acesso definido por `IAuthorizationHandler` customizado |
+| **Owner check** | Projetado — Agricultor só acessa seus próprios dados (`propriedadeId == claims.userId`); cooperativa acessa apenas membros vinculados |
 | **Segregação de ambientes** | Ambientes de desenvolvimento, homologação e produção com credenciais separadas e sem acesso cruzado |
 | **Gestão de credenciais** | Secrets armazenados em Vault (HashiCorp); rotação trimestral; credenciais padrão proibidas; push protection ativo no GitHub |
 | **Política de senhas** | Mínimo 8 caracteres (acessível ao público rural — NIST SP 800-63B recomenda comprimento sobre complexidade); verificação contra lista de senhas vazadas (HaveIBeenPwned, k-anonymity); bloqueio após 5 tentativas (lockout 15 min); sem exigência de caracteres especiais |
 
-### 2.6 Controles técnicos de segurança (Anexo A — ISO/IEC 27001:2013)
+### 2.6 Controles técnicos de segurança (Anexo A — ISO/IEC 27001:2022)
 
-| Domínio ISO 27001 | Controle | Status |
+| Controle (2022) | Aplicação no 2F-AGRO | Status |
 |---|---|---|
-| A.5 — Políticas de SI | Política documentada neste SGSI | Implementado |
-| A.6 — Organização da SI | Papéis definidos (§ 2.3); gestor e DPO designados | Implementado |
-| A.7 — Segurança em RH | Termos de confidencialidade para membros da equipe | Planejado |
-| A.8 — Gestão de ativos | Inventário de 7 ativos críticos (ver Threat Model); classificação de dados (§ 2.4) | Implementado |
-| A.9 — Controle de acesso | RBAC + JWT + MFA + owner check (§ 2.5) | Implementado |
-| A.10 — Criptografia | AES-256 em repouso (pgcrypto em colunas sensíveis + LUKS full-disk); TLS 1.3 em trânsito; bcrypt para senhas; AES-256-GCM para telemetria edge | Implementado |
-| A.12 — Segurança operacional | Logging centralizado (Grafana + Loki); monitoramento 24/7; backups diários criptografados | Implementado |
-| A.13 — Segurança de comunicações | TLS 1.3 em todas as comunicações; mTLS no fallback 4G das estações; certificate pinning no app mobile | Implementado |
-| A.14 — Aquisição e desenvolvimento | Code review obrigatório (PR + 1 reviewer); SAST no CI; testes de autorização automatizados | Implementado |
-| A.16 — Gestão de incidentes | Plano de resposta a incidentes documentado (ver `cyber/resposta-incidentes.md`) | Documentado |
-| A.18 — Conformidade | LGPD (seção 5 deste documento); RIPD (seção 6) | Implementado |
+| 5.1 Políticas de segurança da informação (Organizacional) | Política do SGSI documentada neste capítulo | Documentado |
+| 5.2 Papéis e responsabilidades (Organizacional) | Gestor de SI e DPO designados (§ 2.3) | Documentado |
+| 5.9 Inventário de ativos / 5.12 Classificação (Organizacional) | Inventário de 7 ativos críticos (ver Threat Model); classificação de dados (§ 2.4) | Documentado |
+| 5.15 Controle de acesso / 8.2 Privilégios / 8.5 Autenticação segura | JWT implementado no backend; RBAC, MFA e owner check projetados (§ 2.5) | Parcial |
+| 5.24–5.26 Gestão de incidentes (Organizacional) | Plano de resposta a incidentes completo (`cyber/resposta-incidentes.md`) | Documentado |
+| 5.29–5.30 Continuidade de negócio (Organizacional) | Modo degradado read-only; RPO ≤ 24 h / RTO ≤ 4 h | Documentado |
+| 5.31 Requisitos legais / 5.34 Privacidade e proteção de PII (Organizacional) | Conformidade LGPD (§§ 5–6); RIPD (§ 6) | Documentado |
+| 6.6 Acordos de confidencialidade (Pessoas) | Termos de confidencialidade para membros da equipe | Planejado |
+| 7.1 Perímetros físicos / 7.4 Monitoramento físico (Físico) | Gabinete com lacre anti-violação + sensor de abertura nas estações edge (ver R04) | Projetado |
+| 8.13 Backup / 8.15 Logging / 8.16 Monitoramento (Tecnológico) | Backups diários criptografados; SIEM Grafana + Loki; monitoramento 24/7 | Projetado |
+| 8.20–8.21 Segurança de redes (Tecnológico) | mTLS edge; NetworkPolicy deny-by-default; certificate pinning no app | Projetado |
+| 8.24 Criptografia (Tecnológico) | Hash de senhas PBKDF2/SHA-256 implementado (bcrypt/Argon2id planejado); TLS 1.3, pgcrypto e LUKS projetados | Parcial |
+| 8.25 SDLC seguro / 8.28 Codificação segura (Tecnológico) | CI com build/teste, push protection e Dependabot ativos; SAST planejado | Parcial |
+
+**Legenda de status:** **Implementado** — código real no repositório; **Parcial** — parte implementada, parte projetada; **Projetado** — definido na arquitetura-alvo; **Documentado** — formalizado em documento desta entrega; **Planejado** — previsto no roadmap, ainda sem artefato.
 
 ---
 
@@ -143,7 +147,7 @@ Muito Baixa         Baixo           Baixo       Baixo        Baixo        Médio
 | R02 | Envenenamento de dados de telemetria → degradação do modelo ML | Modelo ML, Banco de alertas, Estação IoT | Média | Crítico | **Crítico** | Mitigar — validação estatística de ingestão + assinatura digital ECDSA + quarentena de dados anômalos + versionamento de modelo | lucca |
 | R03 | Vazamento massivo de PII via API (BOLA/IDOR) | Geolocalização, Dados financeiros, API Gateway | Alta | Crítico | **Crítico** | Mitigar — RBAC + owner check + filtragem de campos por role + rate limiting + testes automatizados de autorização | brunão / ruan |
 | R04 | Acesso físico não autorizado à estação edge | Estação IoT | Alta | Moderado | **Alto** | Mitigar — gabinete com lacre anti-violação + sensor de abertura + hardening do Raspberry Pi (SSH por chave RSA-4096, firewall iptables, boot seguro) | lucca / jota |
-| R05 | Indisponibilidade da API em período crítico de safra (inclui DDoS — VET-04) | API Gateway, Links de dados espaciais (A7) | Baixa | Crítico | **Alto** | Mitigar — CDN/WAF com mitigação DDoS (Cloudflare) + rate limiting + auto-scaling horizontal + modo degradado read-only + cache offline no app + réplica de banco | brunão / ruan |
+| R05 | Indisponibilidade da API em período crítico de safra (inclui DDoS — VET-04) | API Gateway, Links de dados espaciais (A7) | Média | Alto | **Alto** | Mitigar — CDN/WAF com mitigação DDoS (Cloudflare) + rate limiting + auto-scaling horizontal + modo degradado read-only + cache offline no app + réplica de banco | brunão / ruan |
 | R06 | Vazamento de credenciais/secrets no repositório | Todos os sistemas | Baixa | Alto | **Médio** | Mitigar — push protection no GitHub + secrets em Vault + rotação trimestral + CI com detecção de secrets | jota |
 | R07 | Perda de dados por falha de backup | Banco de dados, Banco de alertas | Muito Baixa | Crítico | **Médio** | Mitigar — backups diários criptografados + teste de restore mensal + retenção de 90 dias + réplica geográfica | brunão |
 | R08 | Phishing contra membros da equipe/cooperativa | Controle de acesso | Média | Moderado | **Médio** | Mitigar — MFA obrigatório para cooperativas e admins + treinamento semestral de conscientização | roji |
@@ -157,8 +161,8 @@ Muito Baixa         Baixo           Baixo       Baixo        Baixo        Médio
                    ──────────────────────────────────────────────────────────────
 Muito Alta         │              │           │            │            │         │
 Alta               │              │           │   R04      │            │  R03    │
-Média              │              │           │   R08      │   R01      │  R02    │
-Baixa              │              │           │            │ R06,R09,R10│  R05    │
+Média              │              │           │   R08      │ R01,R05    │  R02    │
+Baixa              │              │           │            │ R06,R09,R10│         │
 Muito Baixa        │              │           │            │            │  R07    │
                    ──────────────────────────────────────────────────────────────
 ```
@@ -251,14 +255,14 @@ Verificar a eficácia dos controles de segurança, a conformidade com a ISO 2700
 | Dado pessoal | Base legal (LGPD art. 7º) | Justificativa |
 |---|---|---|
 | Nome completo, CPF, e-mail, telefone | **Consentimento (art. 7º, I)** | Cadastro voluntário no app; consentimento granular coletado na tela de primeiro acesso |
-| Geolocalização precisa da propriedade | **Consentimento qualificado (art. 7º, I)** | Dado pessoal com proteção reforçada pelo risco contextual; consentimento destacado e específico com explicação clara da finalidade |
+| Geolocalização precisa da propriedade | **Execução de contrato (art. 7º, V)** | Indispensável à prestação do serviço de alertas georreferenciados; tela destacada mantida como medida de transparência |
 | Dados produtivos (safra, área cultivada) | **Execução de contrato (art. 7º, V)** | Necessário para prestação do serviço de alertas agroclimáticos |
 | Dados financeiros (renda, crédito Pronaf) | **Consentimento (art. 7º, I)** | Dado opcional; coletado apenas se o agricultor optar por funcionalidades financeiras |
 | Telemetria IoT (temperatura, umidade, vento) | **Legítimo interesse (art. 7º, IX)** | Dados técnicos sem identificação direta; necessários para funcionamento do sistema; teste de proporcionalidade documentado no RIPD |
 
 ### 5.2 Consentimento explícito
 
-O 2F-AGRO implementa consentimento conforme arts. 7º, 8º e 11 da LGPD:
+O 2F-AGRO implementa consentimento conforme arts. 7º e 8º da LGPD, aplicando voluntariamente o padrão de destaque do art. 11 à localização:
 
 **Fluxo no app mobile:**
 
@@ -266,13 +270,16 @@ O 2F-AGRO implementa consentimento conforme arts. 7º, 8º e 11 da LGPD:
 ┌────────────────────────────────────────────────────┐
 │            BEM-VINDO AO 2F-AGRO                    │
 │                                                    │
-│  Para funcionar, o app precisa coletar alguns      │
-│  dados seus. Você escolhe o que compartilhar:      │
+│  Para funcionar, o app coleta:                     │
 │                                                    │
-│  ☑ Nome e CPF (obrigatório para cadastro)          │
-│  ☑ Localização da propriedade (obrigatório para    │
-│    alertas — dado protegido por criptografia        │
-│    e anonimização em logs)                         │
+│  • Nome e CPF (obrigatório para cadastro)          │
+│  • Localização da propriedade — condição do        │
+│    serviço de alertas (art. 7º, V); dado           │
+│    protegido por criptografia e anonimização       │
+│    em logs                                         │
+│                                                    │
+│  Você escolhe se quer compartilhar:                │
+│                                                    │
 │  ☐ Dados financeiros (opcional — usado para        │
 │    sugestões de crédito Pronaf)                    │
 │                                                    │
@@ -292,20 +299,22 @@ O 2F-AGRO implementa consentimento conforme arts. 7º, 8º e 11 da LGPD:
 | **Livre** | Botão "Recusar" disponível sem consequência punitiva; funcionalidades básicas acessíveis sem dados opcionais |
 | **Informado** | Texto claro em linguagem acessível (nível de leitura compatível com público-alvo); link para política completa |
 | **Inequívoco** | Ação afirmativa (toque no botão); checkboxes não pré-marcados para dados opcionais |
-| **Específico** | Consentimento granular por categoria de dado (cadastro, localização, financeiro) |
-| **Destacado para dados sensíveis (art. 11)** | Localização possui consentimento em tela separada com explicação detalhada da finalidade e dos riscos |
+| **Específico** | Consentimento granular por categoria de dado (cadastro, financeiro); localização tratada como condição do serviço (art. 7º, V), informada com destaque |
+| **Destacado — padrão análogo ao art. 11 aplicado voluntariamente** | Localização apresentada em tela separada por transparência, com explicação detalhada da finalidade e dos riscos (não integra o rol de dados sensíveis do art. 5º, II) |
 | **Revogável (art. 8º, § 5º)** | Tela de Configurações > Privacidade permite revogar qualquer consentimento; revogação processada em até 24h |
 
-**Armazenamento do consentimento:**
+**Armazenamento de consentimentos e registros de ciência:**
 
 ```
 Tabela: consentimentos
 ─────────────────────────────────────────────────
-| id (UUID)       | titular_id  | categoria        | concedido | data_consentimento   | ip_origem    | versao_termos |
-| a1b2c3...       | usr_001     | dados_cadastrais | true      | 2026-06-01T10:30:00Z | 189.x.x.x   | v2.1          |
-| d4e5f6...       | usr_001     | geolocalizacao   | true      | 2026-06-01T10:30:15Z | 189.x.x.x   | v2.1          |
-| g7h8i9...       | usr_001     | dados_financeiros| false     | 2026-06-01T10:30:15Z | 189.x.x.x   | v2.1          |
+| id (UUID)       | titular_id  | categoria        | tipo_registro | concedido | data_registro        | ip_origem    | versao_termos |
+| a1b2c3...       | usr_001     | dados_cadastrais | consentimento | true      | 2026-06-01T10:30:00Z | 189.x.x.x   | v2.1          |
+| d4e5f6...       | usr_001     | geolocalizacao   | ciencia¹      | —         | 2026-06-01T10:30:15Z | 189.x.x.x   | v2.1          |
+| g7h8i9...       | usr_001     | dados_financeiros| consentimento | false     | 2026-06-01T10:30:15Z | 189.x.x.x   | v2.1          |
 ```
+
+¹ A geolocalização tem base legal de execução de contrato (art. 7º, V) — o registro é trilha de **ciência** da condição contratual exibida na tela destacada, não ato de consentimento.
 
 ### 5.3 Direito ao esquecimento (DELETE /me)
 
@@ -352,7 +361,7 @@ exclusão no app              a requisição
 
 | Dado | Justificativa legal | Forma de retenção |
 |---|---|---|
-| Dados agregados de telemetria (sem vínculo ao titular) | Art. 16, IV — pesquisa e estatística | Anonimizados irreversivelmente |
+| Dados agregados de telemetria (sem vínculo ao titular) | Art. 16, IV — uso exclusivo do controlador, dados anonimizados | Anonimizados irreversivelmente |
 | Log de auditoria da exclusão (sem PII) | Art. 16, I — cumprimento de obrigação legal | Apenas registro: "titular X solicitou exclusão em data Y" (sem nome/CPF) |
 | Dados necessários para exercício de direitos em processo | Art. 16, II — exercício regular de direitos | Retidos apenas se houver litígio em curso |
 
@@ -409,14 +418,14 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 | **Natureza** | Coleta, armazenamento, processamento e compartilhamento de dados pessoais de agricultores familiares brasileiros via plataforma digital (app mobile + backend cloud + estações IoT de campo) |
 | **Finalidade** | Fornecer alertas agroclimáticos personalizados, detecção de pragas por visão computacional e sugestões de manejo baseadas em dados de satélite e sensores locais — visando reduzir perdas de safra e aumentar a resiliência do pequeno produtor |
 | **Escopo** | Dados pessoais de agricultores cadastrados (estimativa inicial: 500-5.000 titulares); dados coletados via app mobile e estações IoT; processamento em cloud (Azure/AWS, região Brasil) |
-| **Contexto** | Público-alvo de baixa literacia digital; regiões remotas com conectividade limitada; dados de localização especialmente sensíveis por revelar propriedades agrícolas vulneráveis a roubo |
+| **Contexto** | Público-alvo de baixa literacia digital; regiões remotas com conectividade limitada; dados de localização com risco contextual elevado por revelar propriedades agrícolas vulneráveis a roubo |
 
 ### 6.3 Inventário de dados pessoais tratados
 
 | Categoria | Dados específicos | Base legal | Finalidade | Compartilhamento |
 |---|---|---|---|---|
 | **Identificação** | Nome completo, CPF, e-mail, telefone | Consentimento | Cadastro e comunicação | Cooperativa do titular (se vinculado) |
-| **Localização** | Coordenadas GPS da propriedade (lat/long) | Consentimento explícito (sensível) | Alertas regionalizados | Cooperativa (truncadas a 2 casas); EMATER (agregadas) |
+| **Localização** | Coordenadas GPS da propriedade (lat/long) | Execução de contrato (art. 7º, V), com transparência reforçada (tela destacada) | Alertas regionalizados | Cooperativa (truncadas a 2 casas); EMATER (agregadas) |
 | **Produtivos** | Cultura plantada, área cultivada, safra estimada | Execução de contrato | Personalização de alertas e sugestões | Cooperativa (se vinculado); EMATER (agregados) |
 | **Financeiros** (opcional) | Renda estimada, linhas de crédito Pronaf | Consentimento | Sugestões de crédito | Não compartilhado |
 | **Imagens** | Fotos de folhas para detecção de pragas | Consentimento | Diagnóstico por IA | Não compartilhado; descartadas em 24h |
@@ -441,7 +450,7 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 
 | Risco ao titular | Probabilidade | Gravidade | Medida de mitigação |
 |---|---|---|---|
-| **Exposição de localização** → roubo de safra, invasão de propriedade, violência | Média | Crítica | Criptografia AES-256 em repouso; truncamento de coordenadas em trânsito e em logs; RBAC com owner check; consentimento explícito com aviso de risco |
+| **Exposição de localização** → roubo de safra, invasão de propriedade, violência | Média | Crítica | Criptografia AES-256 em repouso; truncamento de coordenadas em trânsito e em logs; RBAC com owner check; tela destacada de transparência com aviso de risco |
 | **Vazamento de CPF/dados financeiros** → fraude, clonagem de identidade | Baixa | Alta | Autenticação obrigatória em todos os endpoints; field-level security (CPF nunca em listagens); criptografia em repouso |
 | **Perfilamento indevido** → discriminação em acesso a crédito | Muito Baixa | Alta | Dados financeiros são opcionais; modelo ML não gera score de crédito; dados não compartilhados com instituições financeiras |
 | **Uso secundário não autorizado** → marketing, venda de dados | Muito Baixa | Alta | Dados não são compartilhados com terceiros comerciais; cooperativa e EMATER recebem apenas dados agregados/truncados; política contratual de não-repasse |
@@ -461,7 +470,7 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 
 ## 7. Referências
 
-- **ISO/IEC 27001:2013** — Sistemas de gestão de segurança da informação — Requisitos (Anexo A com 14 domínios de controle)
+- **ISO/IEC 27001:2022** — Sistemas de gestão de segurança da informação (Anexo A com 93 controles em 4 temas)
 - **ISO/IEC 27005:2022** — Gestão de riscos de segurança da informação
 - **LGPD — Lei nº 13.709/2018** (arts. 5º, 6º, 7º, 8º, 11, 16, 18, 37, 38, 41, 42, 46)
 - **ANPD** — Guia Orientativo para Definições dos Agentes de Tratamento e do Encarregado (2021)
