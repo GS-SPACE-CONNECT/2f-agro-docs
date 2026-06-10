@@ -83,7 +83,7 @@ A 2F-AGRO compromete-se a proteger a **confidencialidade**, **integridade** e **
 | **Owner check** | Agricultor só acessa seus próprios dados (`propriedadeId == claims.userId`); cooperativa acessa apenas membros vinculados |
 | **Segregação de ambientes** | Ambientes de desenvolvimento, homologação e produção com credenciais separadas e sem acesso cruzado |
 | **Gestão de credenciais** | Secrets armazenados em Vault (HashiCorp); rotação trimestral; credenciais padrão proibidas; push protection ativo no GitHub |
-| **Política de senhas** | Mínimo 12 caracteres, com letras maiúsculas, minúsculas, números e caracteres especiais; bloqueio após 5 tentativas (lockout 15 min); sem reutilização das últimas 5 senhas |
+| **Política de senhas** | Mínimo 8 caracteres (acessível ao público rural — NIST SP 800-63B recomenda comprimento sobre complexidade); verificação contra lista de senhas vazadas (HaveIBeenPwned, k-anonymity); bloqueio após 5 tentativas (lockout 15 min); sem exigência de caracteres especiais |
 
 ### 2.6 Controles técnicos de segurança (Anexo A — ISO/IEC 27001:2013)
 
@@ -92,7 +92,7 @@ A 2F-AGRO compromete-se a proteger a **confidencialidade**, **integridade** e **
 | A.5 — Políticas de SI | Política documentada neste SGSI | Implementado |
 | A.6 — Organização da SI | Papéis definidos (§ 2.3); gestor e DPO designados | Implementado |
 | A.7 — Segurança em RH | Termos de confidencialidade para membros da equipe | Planejado |
-| A.8 — Gestão de ativos | Inventário de 6 ativos críticos (ver Threat Model); classificação de dados (§ 2.4) | Implementado |
+| A.8 — Gestão de ativos | Inventário de 7 ativos críticos (ver Threat Model); classificação de dados (§ 2.4) | Implementado |
 | A.9 — Controle de acesso | RBAC + JWT + MFA + owner check (§ 2.5) | Implementado |
 | A.10 — Criptografia | AES-256 em repouso (pgcrypto em colunas sensíveis + LUKS full-disk); TLS 1.3 em trânsito; bcrypt para senhas; AES-256-GCM para telemetria edge | Implementado |
 | A.12 — Segurança operacional | Logging centralizado (Grafana + Loki); monitoramento 24/7; backups diários criptografados | Implementado |
@@ -143,7 +143,7 @@ Muito Baixa         Baixo           Baixo       Baixo        Baixo        Médio
 | R02 | Envenenamento de dados de telemetria → degradação do modelo ML | Modelo ML, Banco de alertas, Estação IoT | Média | Crítico | **Crítico** | Mitigar — validação estatística de ingestão + assinatura digital ECDSA + quarentena de dados anômalos + versionamento de modelo | lucca |
 | R03 | Vazamento massivo de PII via API (BOLA/IDOR) | Geolocalização, Dados financeiros, API Gateway | Alta | Crítico | **Crítico** | Mitigar — RBAC + owner check + filtragem de campos por role + rate limiting + testes automatizados de autorização | brunão / ruan |
 | R04 | Acesso físico não autorizado à estação edge | Estação IoT | Alta | Moderado | **Alto** | Mitigar — gabinete com lacre anti-violação + sensor de abertura + hardening do Raspberry Pi (SSH por chave RSA-4096, firewall iptables, boot seguro) | lucca / jota |
-| R05 | Indisponibilidade da API em período crítico de safra | API Gateway | Baixa | Crítico | **Alto** | Mitigar — WAF + rate limiting + auto-scaling + modo degradado read-only + réplica de banco | brunão / ruan |
+| R05 | Indisponibilidade da API em período crítico de safra (inclui DDoS — VET-04) | API Gateway, Links de dados espaciais (A7) | Baixa | Crítico | **Alto** | Mitigar — CDN/WAF com mitigação DDoS (Cloudflare) + rate limiting + auto-scaling horizontal + modo degradado read-only + cache offline no app + réplica de banco | brunão / ruan |
 | R06 | Vazamento de credenciais/secrets no repositório | Todos os sistemas | Baixa | Alto | **Médio** | Mitigar — push protection no GitHub + secrets em Vault + rotação trimestral + CI com detecção de secrets | jota |
 | R07 | Perda de dados por falha de backup | Banco de dados, Banco de alertas | Muito Baixa | Crítico | **Médio** | Mitigar — backups diários criptografados + teste de restore mensal + retenção de 90 dias + réplica geográfica | brunão |
 | R08 | Phishing contra membros da equipe/cooperativa | Controle de acesso | Média | Moderado | **Médio** | Mitigar — MFA obrigatório para cooperativas e admins + treinamento semestral de conscientização | roji |
@@ -433,7 +433,7 @@ Conforme art. 6º, III da LGPD (princípio da necessidade), o 2F-AGRO coleta ape
 | **Qualidade dos dados (V)** | Titular pode corrigir dados via app (tela "Editar Perfil"); dados de telemetria validados estatisticamente |
 | **Transparência (VI)** | Política de privacidade em linguagem acessível; tela de consentimento granular; DPO publicado |
 | **Segurança (VII)** | Controles técnicos documentados no SGSI (seção 2); criptografia em repouso e trânsito; RBAC |
-| **Prevenção (VIII)** | Threat model com 3 vetores de ataque e mitigações; plano de resposta a incidentes; auditorias semestrais |
+| **Prevenção (VIII)** | Threat model com 4 vetores de ataque e mitigações; plano de resposta a incidentes; auditorias semestrais |
 | **Não discriminação (IX)** | Sistema não utiliza dados para profiling discriminatório; modelo ML avalia risco agroclimático, não perfil pessoal |
 | **Responsabilização (X)** | Este RIPD documenta as medidas adotadas; DPO designado; logs de auditoria; conformidade verificada semestralmente |
 

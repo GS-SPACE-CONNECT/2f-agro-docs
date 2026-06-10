@@ -28,7 +28,7 @@ Centralizar todas as entregas documentais: ArchiMate (`.archi`), Backlog, Pitch,
 - **Vídeo Pitch** até 3 min — **20 pts**
 
 ## 🔐 Cyber (10 pts)
-- Threat Modeling (ativos + 3 vetores) — 2 pts
+- Threat Modeling (7 ativos + 4 vetores) — 2 pts
 - Arquitetura de Segurança (acesso + dados + infra) — 3 pts
 - Governança (ISO 27001 + LGPD) — 2 pts
 - **Plano de Resposta a Incidentes** — 3 pts
